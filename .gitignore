@@ -1,0 +1,7 @@
+**/.env
+**/.env.*
+backend/config/config.env
+node_modules
+dist
+build
+coverage

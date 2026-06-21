@@ -1,6 +1,6 @@
 import React from "react";
 import { Route, Routes } from "react-router-dom";
-import UserLayout from "./layout/userLayout";
+import UserLayout from "./layout/UserLayout";
 import Home from "./pages/Home";
 
 //Import Toastify components and CSS styles

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
-import { registerUser } from "../redux/features/user/userAPI";
-import { removeErrors, removeSuccess } from "../redux/features/user/userSlice";
+import { registerUser } from "../../redux/features/user/userAPI";
+import { removeErrors, removeSuccess } from "../../redux/features/user/userSlice";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 

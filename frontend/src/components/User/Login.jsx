@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
-import { removeErrors, removeSuccess } from "../redux/features/user/userSlice";
+import { removeErrors, removeSuccess } from "../../redux/features/user/userSlice";
 import { useNavigate, Link, useLocation } from "react-router-dom"; 
-import { LoginUser } from "../redux/features/user/userAPI";
+import { LoginUser } from "../../redux/features/user/userAPI";
 
 const Login = () => {
   const { error, success, loading, isAuthenticated } = useSelector((state) => state.user);
@@ -124,9 +124,9 @@ const Login = () => {
                   <label htmlFor="password" className="text-xs font-semibold text-slate-700 tracking-wide uppercase">
                     Password
                   </label>
-                  <a href="#forgot" className="text-xs font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
+                  <Link to="/password/forgot" className="text-xs font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
                     Forgot password?
-                  </a>
+                  </Link>
                 </div>
                 <input
                   id="password"

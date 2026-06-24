@@ -112,60 +112,60 @@ export const logoutUser = async (req, res) => {
 };
 
 // @desc    Forgot password request
-export const forgotPassword = async (req, res) => {
-  const { email } = req.body;
+// export const forgotPassword = async (req, res) => {
+//   const { email } = req.body;
 
-  try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+//   try {
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
 
-    const resetToken = crypto.randomBytes(20).toString("hex");
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
-    await user.save();
+//     const resetToken = crypto.randomBytes(20).toString("hex");
+//     user.resetPasswordToken = resetToken;
+//     user.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
+//     await user.save();
 
-    const resetUrl = `http://localhost:8000/password/reset/${resetToken}`;
+//     const resetUrl = `http://localhost:8000/password/reset/${resetToken}`;
 
-    try {
-      const transporter = nodemailer.createTransport({
-        service: "Gmail",
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-      });
+//     try {
+//       const transporter = nodemailer.createTransport({
+//         service: "Gmail",
+//         auth: {
+//           user: process.env.EMAIL_USER,
+//           pass: process.env.EMAIL_PASS,
+//         },
+//       });
 
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: user.email,
-        subject: "Password Reset Request",
-        html: `
-          <p>You have requested a password reset.</p>
-          <p>Please click the link below to reset your password:</p>
-          <a href="${resetUrl}" target="_blank">Reset Password</a>
-          <p>This link will expire in 30 minutes.</p>
-        `,
-      };
+//       const mailOptions = {
+//         from: process.env.EMAIL_USER,
+//         to: user.email,
+//         subject: "Password Reset Request",
+//         html: `
+//           <p>You have requested a password reset.</p>
+//           <p>Please click the link below to reset your password:</p>
+//           <a href="${resetUrl}" target="_blank">Reset Password</a>
+//           <p>This link will expire in 30 minutes.</p>
+//         `,
+//       };
 
-      await transporter.sendMail(mailOptions);
-      res
-        .status(200)
-        .json({ success: true, message: "Password reset link sent to email" });
-    } catch (error) {
-      user.resetPasswordToken = undefined;
-      user.resetPasswordExpire = undefined;
-      await user.save();
-      res.status(500).json({
-        success: false,
-        message: "Failed to send email. Please try again later.",
-      });
-    }
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+//       await transporter.sendMail(mailOptions);
+//       res
+//         .status(200)
+//         .json({ success: true, message: "Password reset link sent to email" });
+//     } catch (error) {
+//       user.resetPasswordToken = undefined;
+//       user.resetPasswordExpire = undefined;
+//       await user.save();
+//       res.status(500).json({
+//         success: false,
+//         message: "Failed to send email. Please try again later.",
+//       });
+//     }
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
 
 // @desc  Request Reset password (Reset code and link)
 export const requestPasswordReset = async (req, res) => {
@@ -201,16 +201,16 @@ export const requestPasswordReset = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     // Create reset URL with raw token
-    const resetUrl = `${req.protocol}://${req.get("host")}/api/v1/password/reset/${rawToken}`;
+    const resetUrl = `http://localhost:5173/reset/${rawToken}`;
     const message = `Hello,
 
-    We received a request to reset the password associated with your account. To complete this request, please click the link below or copy and paste it into your browser:
+    We received a request to reset the password associated with your account. To complete this request, please click the link below or copy and paste it into your browser :
 
     ${resetUrl}
 
-    For your security, this link is only valid for the next 60 minutes. If you did not initiate this request, no further action is required; your account remains secure, and your current password will not be changed.
+    For your security, this link is only valid for the next 30 minutes. If you did not initiate this request, no further action is required; your account remains secure, and your current password will not be changed.
 
-    Best regards,
+    Best regards
     The Security Team`;
 
     // Send email
@@ -222,6 +222,7 @@ export const requestPasswordReset = async (req, res) => {
       });
 
       res.status(200).json({
+        success: true,
         message: "Password reset link sent to email",
       });
     } catch (error) {
@@ -375,7 +376,10 @@ export const updateProfile = async (req, res) => {
     // Handle Image Files if sent from frontend
     if (req.file) {
       // Clean up previous image inside Cloudinary first to save storage space
-      if (user.avatar?.public_id && user.avatar.public_id !== "default_avatar") {
+      if (
+        user.avatar?.public_id &&
+        user.avatar.public_id !== "default_avatar"
+      ) {
         await cloudinary.uploader.destroy(user.avatar.public_id);
       }
 

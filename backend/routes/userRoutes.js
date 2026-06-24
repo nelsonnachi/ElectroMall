@@ -26,7 +26,7 @@ router.post("/password/forgot", requestPasswordReset);
 router.post("/password/reset/:token", resetPassword);
 router.get("/profile", verifyUserAuthentication, getUserProfile);
 router.put("/profile/update", verifyUserAuthentication, uploadSingleImage.single("avatar") ,updateProfile);
-router.post("/password/update", verifyUserAuthentication, updatePassword);
+router.put("/password/update", verifyUserAuthentication, updatePassword);
 
 // admin-------------------------
 

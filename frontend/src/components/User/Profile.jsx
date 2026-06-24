@@ -6,8 +6,8 @@ import {
   getAvatarStyle,
   getUserInitial,
   hasCustomAvatar,
-} from "../utils/avatar";
-import WaveLoader from "./WaveLoader";
+} from "../../utils/avatar";
+import WaveLoader from "../WaveLoader";
 
 
 const Profile = () => {

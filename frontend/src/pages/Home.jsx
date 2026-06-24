@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import Banner from "../components/Banner";
-import Trending from "../components/Trending";
+import Trending from "../components/product/Trending";
 import WaveLoader from "../components/WaveLoader";
 import { useSelector, useDispatch } from "react-redux";
 import { getProduct } from "../redux/features/product/productAPI";

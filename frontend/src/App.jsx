@@ -6,17 +6,19 @@ import Home from "./pages/Home";
 //Import Toastify components and CSS styles
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ProductDetails from "./components/ProductDetails";
-import Profile from "./components/Profile";
+import ProductDetails from "./components/product/ProductDetails";
+import Profile from "./components/User/Profile";
 import Shop from "./pages/Shop";
-import Register from "./components/Register";
-import Login from "./components/Login";
+import Register from "./components/User/Register";
+import Login from "./components/User/Login";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { loadUserData } from "./redux/features/user/userAPI";
-import UserDashOptions from "./components/UserDashOptions";
-import EditProfile from "./components/EditProfile";
+import EditProfile from "./components/User/EditProfile";
 import ProtectedRoute from "./components/ProtectedRoute";
+import UpdatePassword from "./components/User/UpdatePassword";
+import ForgotPassword from "./components/User/ForgotPassword";
+import ResetPassword from "./components/User/ResetPassword";
 
 const App = () => {
   const { isAuthenticated, user } = useSelector((state) => state.user);
@@ -39,13 +41,13 @@ const App = () => {
           <Route path="/shop/:keyword" element={<Shop />} />
           <Route path="/profile" element={<ProtectedRoute element={<Profile />} />}  />
           <Route path="/profile/update" element={<ProtectedRoute element={<EditProfile />} />}  />
-
-          {/* <Route path="/profile/update" element={<EditProfile />} /> */}
-          {/* <Route path="/password/update" element={<ChangePassword />} /> */}
+          <Route path="/password/update" element={<ProtectedRoute element={<UpdatePassword />}/>} />
         </Route>
 
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/password/forgot" element={<ForgotPassword />} />
+        <Route path="/reset/:token" element={<ResetPassword />} />
       </Routes>
 
       {/* Adding the container at the bottom so it is globally available */}

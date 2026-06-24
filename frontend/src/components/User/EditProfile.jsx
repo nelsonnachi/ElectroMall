@@ -7,20 +7,19 @@ import {
   getAvatarStyle,
   getUserInitial,
   hasCustomAvatar,
-} from "../utils/avatar";
-import { updateProfile } from "../redux/features/user/userAPI";
-import { removeErrors, removeSuccess } from "../redux/features/user/userSlice";
+} from "../../utils/avatar";
+import { updateProfile } from "../../redux/features/user/userAPI";
+import { removeErrors, removeSuccess } from "../../redux/features/user/userSlice";
 
 const EditProfile = () => {
   const { user, error, success, loading } = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // --- LOCAL INPUT FORM STATES (Pre-filled with existing user data) ---
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
   const [avatar, setAvatar] = useState(null); 
-  const [avatarPreview, setAvatarPreview] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState("");  
 
   useEffect(() => {
     if (user) {

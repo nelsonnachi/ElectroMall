@@ -1,5 +1,14 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { loadUserData, LoginUser, logout, registerUser, updateProfile } from "./userAPI";
+import {
+  forgotPassword,
+  loadUserData,
+  LoginUser,
+  logout,
+  registerUser,
+  updatePassword,
+  updateProfile,
+  resetPassword,
+} from "./userAPI";
 
 const userSlice = createSlice({
   name: "user",
@@ -35,9 +44,11 @@ const userSlice = createSlice({
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Registration failed. Please try again later.";
+        state.error =
+          action.payload?.message ||
+          "Registration failed. Please try again later.";
         state.user = null;
-        state.isAuthenticated = false ;
+        state.isAuthenticated = false;
       })
 
       // Login cases
@@ -54,9 +65,10 @@ const userSlice = createSlice({
       })
       .addCase(LoginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Login failed. Please try again later.";
+        state.error =
+          action.payload?.message || "Login failed. Please try again later.";
         state.user = null;
-        state.isAuthenticated = false ;
+        state.isAuthenticated = false;
       })
 
       // Loading User Detail/Profile
@@ -72,9 +84,11 @@ const userSlice = createSlice({
       })
       .addCase(loadUserData.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to load user profile. Please try again later.";
+        state.error =
+          action.payload?.message ||
+          "Failed to load user profile. Please try again later.";
         state.user = null;
-        state.isAuthenticated = false ;
+        state.isAuthenticated = false;
       })
 
       // Logout
@@ -85,7 +99,7 @@ const userSlice = createSlice({
       .addCase(logout.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;
-        state.user =  null;
+        state.user = null;
         state.isAuthenticated = false;
       })
       .addCase(logout.rejected, (state, action) => {
@@ -105,13 +119,74 @@ const userSlice = createSlice({
           ...state.user,
           ...action.payload?.user,
         };
-        state.success =  action.payload?.success;
-        state.message =  action.payload?.message;
+        state.success = action.payload?.success;
+        state.message = action.payload?.message;
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Profile update failed. Please try again later.";
+        state.error =
+          action.payload?.message ||
+          "Profile update failed. Please try again later.";
       })
+
+      // Update User Password
+      .addCase(updatePassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updatePassword.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        state.user = {
+          ...state.user,
+          ...action.payload?.user,
+        };
+        state.success = action.payload?.success;
+        state.message = action.payload?.message;
+      })
+      .addCase(updatePassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Email sent failed.";
+      })
+
+      // Forgot password
+      .addCase(forgotPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        state.success = action.payload?.success ?? true;
+        state.message = action.payload?.message;
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload?.message ||
+          "Password update failed. Please try again later.";
+        state.success = false;
+      })
+
+      // Reset password
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        state.success = action.payload?.success ?? true;
+        state.user = null;
+        state.isAuthenticated = false;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.payload?.message ||
+          "Password update failed. Please try again later.";
+        state.success = false;
+      });
   },
 });
 

@@ -5,8 +5,8 @@ import { useSearchParams } from "react-router-dom"; // Changed from useLocation
 import { getProduct } from "../redux/features/product/productAPI";
 import { removeErrors } from "../redux/features/product/productSlice";
 import { toast } from "react-toastify";
-import AllProducts from "../components/AllProducts";
-import Pagination from "../components/Pagination";
+import AllProducts from "../components/product/AllProducts";
+import Pagination from "../components/product/Pagination";
 
 const Shop = () => {
   const dispatch = useDispatch();

@@ -3,7 +3,7 @@ import { Menu, X, User, ShoppingBag, ArrowRight, Search } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import animg from "../assets/an.png";
-import UserDashOptions from "./UserDashOptions";
+import UserDashOptions from "./User/UserDashOptions";
 import {
   getAvatarStyle,
   getUserInitial,

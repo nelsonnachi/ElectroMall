@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { logout } from "../redux/features/user/userAPI";
+import { logout } from "../../redux/features/user/userAPI";
 import { toast } from "react-toastify";
 
 const UserDashOptions = ({ user, closeDropdown }) => {

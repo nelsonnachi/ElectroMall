@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import animg from "../assets/an.png";
 import UserDashOptions from "./User/UserDashOptions";
 import {
-  getAvatarStyle,
+  getAvatarStyle, 
   getUserInitial,
   hasCustomAvatar,
 } from "../utils/avatar";
@@ -27,6 +27,7 @@ const Navbar = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const navigate = useNavigate();
+  const {cartItems} = useSelector((state)=> state.cart)
   const { isAuthenticated, user } = useSelector((state) => state.user);
 
   useEffect(() => {
@@ -150,7 +151,7 @@ const Navbar = () => {
             <NavLink to="/cart" className="relative hover:text-neutral-900">
               <ShoppingBag size={20} />
               <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-900 text-[9px] font-medium text-white">
-                2
+                {cartItems.length}
               </span>
             </NavLink>
 

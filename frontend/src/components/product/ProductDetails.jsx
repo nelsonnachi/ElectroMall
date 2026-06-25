@@ -6,12 +6,23 @@ import Rating from "./Rating";
 import WaveLoader from "../WaveLoader";
 import { getProductDetails } from "../../redux/features/product/productAPI";
 import { removeErrors } from "../../redux/features/product/productSlice";
+import { addItemsToCart } from "../../redux/features/cart/cartAPI";
+import {
+  removeErrors as removeCartErrors,
+  removeSuccess as removeCartSuccess,
+} from "../../redux/features/cart/cartSlice";
 
 const ProductDetails = () => {
   const dispatch = useDispatch();
   const { id } = useParams();
-
+  
   const { product, loading, error } = useSelector((state) => state.product);
+  const {
+    loading: cartLoading,
+    error: cartError,
+    success,
+    cartItems
+  } = useSelector((state) => state.cart);
 
   const [selectedImage, setSelectedImage] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -27,6 +38,11 @@ const ProductDetails = () => {
     }).format(amount || 0);
   };
 
+  const cleanImageUrl = (rawUrl) => {
+    if (!rawUrl) return "";
+    return rawUrl.startsWith("./") ? rawUrl.replace("./", "/") : rawUrl;
+  };
+
   // Fetch product details from the database when the page loads
   useEffect(() => {
     if (id) {
@@ -34,35 +50,52 @@ const ProductDetails = () => {
     }
   }, [dispatch, id]);
 
-  // Clean up errors in the Redux store when leaving this page
   useEffect(() => {
     return () => {
       dispatch(removeErrors());
     };
   }, [dispatch]);
 
-  // Set the initial large image as soon as the product data arrives from Redux
   useEffect(() => {
     if (product?.image?.length > 0) {
-      const rawUrl = product.image[0].url;
-      const cleanUrl = rawUrl.startsWith("./")
-        ? rawUrl.replace("./", "/")
-        : rawUrl;
-      setSelectedImage(cleanUrl);
+      setSelectedImage(cleanImageUrl(product.image[0].url));
     }
   }, [product]);
 
+  const increaseQuantity = () => {
+    if (quantity >= product?.stock) {
+      toast.error(`Only ${product?.stock || 0} items available in stock.`);
+      return;
+    }
+    setQuantity((prevQty) => prevQty + 1);
+  };
+
+  const decreaseQuantity = () => {
+    if (quantity <= 1) return;
+    setQuantity((prevQty) => prevQty - 1);
+  };
+
   const handleAddToCart = () => {
-    if (product.stock <= 0) {
+    if (!product || product?.stock <= 0) {
       toast.error("Sorry, this product is out of stock.");
       return;
     }
-
-    toast.success(
-      `${product.name} added to cart (${quantity} item${quantity > 1 ? "s" : ""})`,
-    );
-    setQuantity(1);
+    dispatch(addItemsToCart({ id, quantity }));
   };
+
+  useEffect(() => {
+    if (success) {
+      toast.success("Cart updated successfully!");
+      dispatch(removeCartSuccess());
+    }
+
+    if (cartError) {
+      toast.error(
+        cartError?.message || cartError || "Failed to update shopping cart.",
+      );
+      dispatch(removeCartErrors()); 
+    }
+  }, [success, cartError, dispatch]);
 
   // Handle review submission form
   const handleReviewSubmit = (event) => {
@@ -82,12 +115,10 @@ const ProductDetails = () => {
     console.log("Review data ready for backend:", reviewData);
     toast.success("Review submitted successfully!");
 
-    // Reset input fields
     setUserRating(0);
     setUserComment("");
   };
 
-  // App Status Boundaries (Loading, Error, or Empty States)
   if (loading) return <WaveLoader />;
 
   if (error) {
@@ -111,48 +142,42 @@ const ProductDetails = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-12">
         {/* LEFT COLUMN: Image Showcase Area */}
         <div className="space-y-4">
-          <div className="aspect-square overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
-            <img
-              src={selectedImage}
-              alt={product.name}
-              className="h-full w-full object-cover"
-            />
-          </div>
+         <div className="aspect-square overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 flex items-center justify-center">
+            {/* FIX: Only render <img> if selectedImage contains a valid URL string */}
+            {selectedImage ? (
+              <img
+                src={selectedImage}
+                alt={product?.name || "Product Image"}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="text-slate-300 text-xs">Loading Image Asset...</div>
+            )}
+          </div>   
 
-          {/* DYNAMIC IMAGE PICKER BOX RULE:
-              Only renders if the admin uploaded more than 1 image asset */}
-          {product.image && product.image.length > 1 && (
+          {product?.image && product.image.length > 1 && (
             <div className="flex gap-3 overflow-x-auto pb-1">
-              {product.image.map((img, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => {
-                    const thumbUrl = img.url.startsWith("./")
-                      ? img.url.replace("./", "/")
-                      : img.url;
-                    setSelectedImage(thumbUrl);
-                  }}
-                  className={`shrink-0 overflow-hidden rounded-xl border-2 transition ${
-                    selectedImage ===
-                    (img.url.startsWith("./")
-                      ? img.url.replace("./", "/")
-                      : img.url)
-                      ? "border-black scale-95"
-                      : "border-transparent opacity-70"
-                  }`}
-                >
-                  <img
-                    src={
-                      img.url.startsWith("./")
-                        ? img.url.replace("./", "/")
-                        : img.url
-                    }
-                    alt="thumbnail"
-                    className="h-16 w-16 object-cover"
-                  />
-                </button>
-              ))}
+              {product.image.map((img, index) => {
+                const refinedUrl = cleanImageUrl(img.url);
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => setSelectedImage(refinedUrl)}
+                    className={`shrink-0 overflow-hidden rounded-xl border-2 transition ${
+                      selectedImage === refinedUrl
+                        ? "border-black scale-95"
+                        : "border-transparent opacity-70"
+                    }`}
+                  >
+                    <img
+                      src={refinedUrl}
+                      alt="thumbnail"
+                      className="h-16 w-16 object-cover"
+                    />
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -160,42 +185,43 @@ const ProductDetails = () => {
         {/* RIGHT COLUMN: Product Information Details Area */}
         <div className="flex flex-col justify-center">
           <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
-            {product.brand} · {product.category}
+            {product?.brand} · {product?.category}
           </span>
           <h1 className="mt-1 text-2xl md:text-3xl font-light tracking-tight text-slate-900">
-            {product.name}
+            {product?.name}
           </h1>
 
           <div className="mb-4 flex items-center gap-1 text-sm font-medium text-amber-500 md:mb-6">
-            <span>★</span> <span>{product.ratings} / 5</span>
+            <span>★</span> <span>{product?.ratings || 0} / 5</span>
           </div>
 
           <p className="mb-4 text-xl md:text-2xl font-semibold text-slate-900">
-            {formatPrice(product.price)}
+            {formatPrice(product?.price)}
           </p>
           <p className="mb-6 text-sm leading-relaxed text-slate-500">
-            {product.description}
+            {product?.description}
           </p>
 
           <div className="border-t border-slate-100 pt-6">
             <div className="mb-4 flex items-center justify-between text-sm">
               <span className="text-slate-400">Availability</span>
               <span
-                className={`font-medium ${product.stock > 0 ? "text-emerald-600" : "text-rose-600"}`}
+                className={`font-medium ${product?.stock > 0 ? "text-emerald-600" : "text-rose-600"}`}
               >
-                {product.stock > 0
+                {product?.stock > 0
                   ? `In Stock (${product.stock} left)`
                   : "Out of Stock"}
               </span>
             </div>
 
-            {product.stock > 0 && (
+            {product?.stock > 0 && (
               <div className="flex gap-4">
                 <div className="flex items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                   <button
                     type="button"
-                    onClick={() => quantity > 1 && setQuantity(quantity - 1)}
-                    className="px-3 py-2 text-slate-500 hover:bg-slate-100"
+                    onClick={decreaseQuantity}
+                    disabled={quantity <= 1}
+                    className="px-3 py-2 text-slate-500 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     -
                   </button>
@@ -204,10 +230,9 @@ const ProductDetails = () => {
                   </span>
                   <button
                     type="button"
-                    onClick={() =>
-                      quantity < product.stock && setQuantity(quantity + 1)
-                    }
-                    className="px-3 py-2 text-slate-500 hover:bg-slate-100"
+                    onClick={increaseQuantity}
+                    disabled={quantity >= product?.stock}
+                    className="px-3 py-2 text-slate-500 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     +
                   </button>
@@ -215,9 +240,10 @@ const ProductDetails = () => {
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="flex-1 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white hover:bg-slate-800 transition active:scale-[0.98]"
+                  className="flex-1 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white hover:bg-slate-800 transition active:scale-[0.98] disabled:opacity-50"
+                  disabled={cartLoading}
                 >
-                  Add to Cart
+                  {cartLoading ? "Adding..." : "Add to Cart"}
                 </button>
               </div>
             )}
@@ -233,7 +259,7 @@ const ProductDetails = () => {
           className="flex w-full items-center justify-between bg-slate-50/50 px-5 py-5 text-left hover:bg-slate-50 transition"
         >
           <span className="text-sm font-medium tracking-tight text-slate-900">
-            Customer Reviews ({product.numOfReviews || 0})
+            Customer Reviews ({product?.numOfReviews || 0})
           </span>
           <span
             className={`text-xs text-slate-400 transform transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
@@ -243,12 +269,12 @@ const ProductDetails = () => {
         </button>
 
         <div
-          className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? "max-h-375 border-t border-slate-100 p-5 md:p-6" : "max-h-0"}`}
+          className={`transition-all duration-300 ease-in-out ${isOpen ? "block border-t border-slate-100 p-5 md:p-6" : "hidden"}`}
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Split A: Reviews Display List */}
             <div className="md:col-span-2 space-y-6 order-2 md:order-1">
-              {!product.reviews || product.reviews.length === 0 ? (
+              {!product?.reviews || product.reviews.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 py-8 text-center">
                   <p className="text-sm text-slate-400">
                     No reviews yet. Be the first to share your thoughts!
@@ -261,6 +287,7 @@ const ProductDetails = () => {
                     className="border-b border-slate-50 pb-6 last:border-0 last:pb-0"
                   >
                     <div className="mb-1 flex items-center justify-between">
+
                       <span className="text-sm font-medium text-slate-900">
                         {review.name}
                       </span>

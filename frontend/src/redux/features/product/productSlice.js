@@ -45,7 +45,6 @@ const productSlice = createSlice({
         state.error = null;
       })
       .addCase(getProductDetails.fulfilled, (state, action) => {
-        console.log("Product Details:", action.payload);
         state.loading = false;
         state.error = null;
         state.product = action.payload?.product || null;

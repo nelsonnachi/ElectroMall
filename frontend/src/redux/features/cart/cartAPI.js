@@ -1,7 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// Register User API
+// Cart API
 export const addItemsToCart = createAsyncThunk(
   "cart/addItemsToCart",
   async ({id, quantity}, { rejectWithValue }) => {

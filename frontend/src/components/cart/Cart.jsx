@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import CartItem from "./CartItems";
@@ -11,10 +11,12 @@ import { removeItemFromCart } from "../../redux/features/cart/cartSlice";
 
 const Cart = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const { success, loading, error, message, cartItems } = useSelector(
     (state) => state.cart,
   );
+  const { isAuthenticated } = useSelector((state) => state.user);
 
   const formatNaira = (amount) => {
     return new Intl.NumberFormat("en-NG", {
@@ -30,7 +32,7 @@ const Cart = () => {
 
   const removeItem = (productId) => {
     dispatch(removeItemFromCart(productId));
-   };
+  };
 
   // Render a loading indicator while your cart state processes operations
   if (loading && (!cartItems || cartItems.length === 0)) return <WaveLoader />;
@@ -65,9 +67,11 @@ const Cart = () => {
 
   const handleCheckout = (e) => {
     e.preventDefault();
-    alert(
-      `Processing checkout of ${formatNaira(total)}... Thank you for shopping with us!`,
-    );
+    if (isAuthenticated) {
+      navigate("/shipping", { replace: true });
+      return;
+    }
+    navigate("/login?redirect=/shipping", { replace: true });
   };
 
   return (
@@ -96,6 +100,15 @@ const Cart = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Column: Product rows display card stream */}
             <div className="lg:col-span-7 space-y-4">
+              {/* Continue Shopping Link */}
+              <div className="mt-6">
+                <Link
+                  to="/shop"
+                  className="inline-block text-indigo-600 font-semibold hover:text-indigo-800 transition"
+                >
+                  ← Continue Shopping
+                </Link>
+              </div>
               {cartItems.map((item) => (
                 <CartItem
                   key={item.product}

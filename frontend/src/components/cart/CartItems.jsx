@@ -8,7 +8,7 @@ const CartItem = ({ item, updateQuantity, removeItem, formatNaira }) => {
   return (
     <div className="flex items-center bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 transition hover:shadow-md">
       <img
-        src={item?.image || "https://unsplash.com"}
+        src={item?.image || "https://via.placeholder.com/80x80?text=No+Image"}
         alt={item?.name || "Product Asset"}
         className="w-20 h-20 object-cover rounded-xl bg-gray-100 flex-shrink-0"
       />

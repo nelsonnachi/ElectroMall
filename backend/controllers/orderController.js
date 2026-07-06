@@ -1,6 +1,6 @@
-import Order from '../models/orderModel.js';
-import Product from '../models/productModel.js';
-import User from '../models/userModel.js';
+import Order from "../models/orderModel.js";
+import Product from "../models/productModel.js";
+import User from "../models/userModel.js";
 
 // Create a new order (user)
 export const createOrder = async (req, res) => {
@@ -18,13 +18,15 @@ export const createOrder = async (req, res) => {
     const order = await Order.create({
       shippingInfo,
       orderItems,
-      paymentInfo,
-      itemsPrice,
-      taxPrice,
-      shippingPrice,
-      totalPrice,
-      paidAt: Date.now(),
-      user: req.user._id, 
+      paymentInfo: {
+        ...paymentInfo,
+        status: paymentInfo?.status || "Pending",
+      },
+      itemsPrice: Number(itemsPrice) || 0,
+      taxPrice: Number(taxPrice) || 0,
+      shippingPrice: Number(shippingPrice) || 0,
+      totalPrice: Number(totalPrice) || 0,
+      user: req.user._id,
     });
 
     res.status(201).json({
@@ -32,7 +34,6 @@ export const createOrder = async (req, res) => {
       message: "Order placed successfully",
       order,
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -47,13 +48,13 @@ export const getSingleOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate(
       "user",
-      "name email"
+      "name email",
     );
 
     if (!order) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Order not found with this ID" 
+      return res.status(404).json({
+        success: false,
+        message: "Order not found with this ID",
       });
     }
 
@@ -61,7 +62,6 @@ export const getSingleOrder = async (req, res) => {
       success: true,
       order,
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -78,10 +78,9 @@ export const allMyOrders = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      count: orders.length, 
+      count: orders.length,
       orders,
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -96,11 +95,13 @@ export const getAllOrders = async (req, res) => {
   try {
     // Fetch ALL orders from the database
     // Sorts by newest first (-1) to show recent orders at the top of the list
-    const orders = await Order.find()
-      .sort({ createdAt: -1 })
+    const orders = await Order.find().sort({ createdAt: -1 });
 
     // Calculate total revenue of the entire store
-    const totalAmount = orders.reduce((acc, order) => acc + order.totalPrice, 0);
+    const totalAmount = orders.reduce(
+      (acc, order) => acc + order.totalPrice,
+      0,
+    );
 
     // 3. Send data and sales calculations back to the Admin Dashboard
     res.status(200).json({
@@ -109,7 +110,6 @@ export const getAllOrders = async (req, res) => {
       count: orders.length,
       orders,
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -121,102 +121,98 @@ export const getAllOrders = async (req, res) => {
 
 // Update order status (Admin)
 export const updateOrderStatus = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
 
-        // Fetch the order
-        const order = await Order.findById(id);
+    // Fetch the order
+    const order = await Order.findById(id);
 
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: "Order not found with this ID"
-            });
-        }
-
-        // Prevent modifications if already delivered
-        if (order.orderStatus === "Delivered") {
-            return res.status(400).json({
-                success: false,
-                message: "Order is already delivered"
-            });
-        }
-
-        // Loop and update product inventory directly in the DB
-        for (const item of order.orderItems) {
-            await Product.findByIdAndUpdate(
-                item.product,
-                { $inc: { stock: -item.quantity } } 
-            );
-        }
-
-        // Update order status details
-        order.orderStatus = status;
-
-        if (status === "Delivered") {
-            order.deliveredAt = Date.now();
-        }
-        
-        // Save order changes
-        await order.save();
-
-        return res.status(200).json({
-            success: true,
-            message: "Order status updated successfully",
-            order
-        });
-
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Server error while updating order status",
-            error: error.message
-        });
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found with this ID",
+      });
     }
+
+    // Prevent modifications if already delivered
+    if (order.orderStatus === "Delivered") {
+      return res.status(400).json({
+        success: false,
+        message: "Order is already delivered",
+      });
+    }
+
+    // Loop and update product inventory directly in the DB
+    for (const item of order.orderItems) {
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: { stock: -item.quantity },
+      });
+    }
+
+    // Update order status details
+    order.orderStatus = status;
+
+    if (status === "Delivered") {
+      order.deliveredAt = Date.now();
+    }
+
+    // Save order changes
+    await order.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Order status updated successfully",
+      order,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Server error while updating order status",
+      error: error.message,
+    });
+  }
 };
 
 // Delete order (Admin)
 export const deleteOrder = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const order = await Order.findById(id);
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
 
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: "Order not found with this ID"
-            });
-        }
-
-        if(order.orderStatus !== "Delivered") {
-            return res.status(400).json({
-                success: false,
-                message: "This order is under processing!"
-            });
-        }
-
-        // Loop through the order items and return them to stock
-        for (const item of order.orderItems) {
-            await Product.findByIdAndUpdate(
-                item.product,
-                { $inc: { stock: item.quantity } } 
-            );
-        }
-
-        // Now it is safe to delete the order record
-        await order.deleteOne();
-
-        return res.status(200).json({
-            success: true,
-            message: "Order deleted and stock restored successfully"
-        });
-
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Server error while deleting order",
-            error: error.message
-        });
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found with this ID",
+      });
     }
-}
+
+    if (order.orderStatus !== "Delivered") {
+      return res.status(400).json({
+        success: false,
+        message: "This order is under processing!",
+      });
+    }
+
+    // Loop through the order items and return them to stock
+    for (const item of order.orderItems) {
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: { stock: item.quantity },
+      });
+    }
+
+    // Now it is safe to delete the order record
+    await order.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: "Order deleted and stock restored successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Server error while deleting order",
+      error: error.message,
+    });
+  }
+};

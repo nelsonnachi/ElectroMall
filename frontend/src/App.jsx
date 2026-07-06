@@ -23,6 +23,7 @@ import Cart from "./components/cart/Cart";
 import Shipping from "./components/cart/Shipping";
 import OrderConfirmation from "./components/cart/OrderConfirmation";
 import Payment from "./components/cart/Payment";
+import PaymentResult from "./components/cart/PaymentResult";
 
 const App = () => {
   const { isAuthenticated, user } = useSelector((state) => state.user);
@@ -34,7 +35,6 @@ const App = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-
   return (
     <>
       <Routes>
@@ -43,13 +43,43 @@ const App = () => {
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/shop/:keyword" element={<Shop />} />
-          <Route path="/profile" element={<ProtectedRoute element={<Profile />} />}  />
-          <Route path="/profile/update" element={<ProtectedRoute element={<EditProfile />} />}  />
-          <Route path="/password/update" element={<ProtectedRoute element={<UpdatePassword />}/>} />
+          <Route
+            path="/profile"
+            element={<ProtectedRoute element={<Profile />} />}
+          />
+          <Route
+            path="/profile/update"
+            element={<ProtectedRoute element={<EditProfile />} />}
+          />
+          <Route
+            path="/password/update"
+            element={<ProtectedRoute element={<UpdatePassword />} />}
+          />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/shipping" element={<ProtectedRoute element={<Shipping />}/>} />
-          <Route path="/order/confirm" element={<ProtectedRoute element={<OrderConfirmation />}/>} />
-          <Route path="/process/payment" element={<ProtectedRoute element={<Payment />}/>} />
+          <Route
+            path="/shipping"
+            element={<ProtectedRoute element={<Shipping />} />}
+          />
+          <Route
+            path="/order/confirm"
+            element={<ProtectedRoute element={<OrderConfirmation />} />}
+          />
+          <Route
+            path="/process/payment"
+            element={<ProtectedRoute element={<Payment />} />}
+          />
+          <Route
+            path="/payment/success"
+            element={
+              <ProtectedRoute element={<PaymentResult status="success" />} />
+            }
+          />
+          <Route
+            path="/payment/cancelled"
+            element={
+              <ProtectedRoute element={<PaymentResult status="cancelled" />} />
+            }
+          />
         </Route>
 
         <Route path="/register" element={<Register />} />

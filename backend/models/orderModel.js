@@ -25,10 +25,10 @@ const orderSchema = new mongoose.Schema({
   orderStatus: { type: String, default: "Processing" },
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   paymentInfo: {
-    id: { type: String, required: true },
-    status: { type: String, required: true },
+    id: { type: String },
+    status: { type: String, default: "Pending" },
   },
-  paidAt: { type: String, required: true },
+  paidAt: { type: Date },
   itemsPrice: { type: Number, required: true },
   taxPrice: { type: Number, required: true },
   shippingPrice: { type: Number, required: true },

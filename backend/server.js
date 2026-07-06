@@ -11,6 +11,7 @@ import orderRouter from "./routes/orderRoutes.js";
 import connectDB from "./config/db.js";
 import cookieParser from "cookie-parser";
 import "./config/cloudinaryConfig.js"; 
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 
 
@@ -29,6 +30,7 @@ connectDB ();
 app.use("/api/v1", productRouter);
 app.use("/api/v1", userRouter);
 app.use("/api/v1", orderRouter);
+app.use("/api/payments", paymentRoutes);
 
 // Start Server
 app.listen(PORT, () => {

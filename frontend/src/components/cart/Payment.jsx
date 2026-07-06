@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
-const PaymentComponent = () => {
+const Payment= () => {
   const orderItem = JSON.parse(sessionStorage.getItem("orderItem"));
 
   const [paymentMethod, setPaymentMethod] = useState("card");

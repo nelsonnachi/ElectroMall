@@ -1,17 +1,20 @@
 import React from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import {
+  createOrder,
+  verifyPayment,
+} from "../../redux/features/payment/paymentAPI";
+import { clearCart } from "../../redux/features/cart/cartSlice";
 
 const OrderConfirmation = () => {
-  const { cartItems, shippingInfo } = useSelector((state) => state.cart);
+  const { cartItems = [], shippingInfo = {} } = useSelector(
+    (state) => state.cart,
+  );
+  const { currentOrder, status } = useSelector((state) => state.payment);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  const formatNaira = (amount) =>
-    new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 0,
-    }).format(amount || 0);
 
   const subtotal = cartItems.reduce(
     (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
@@ -21,179 +24,225 @@ const OrderConfirmation = () => {
   const taxes = subtotal * 0.075;
   const total = subtotal + taxes + shippingCost;
 
-  const proceedToPayment = () => {
-    const data = {
-      subtotal,
-      shippingCost,
-      taxes,
-      total
+  const formatNaira = (amount) => {
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
+      minimumFractionDigits: 0,
+    }).format(amount || 0);
+  };
+
+  const createAndPay = async () => {
+    if (!cartItems.length) {
+      toast.error("Your cart is empty.");
+      return;
     }
 
-    sessionStorage.setItem("orderItem", JSON.stringify(data))
-    navigate("/process/payment")
-  }
+    const orderPayload = {
+      shippingInfo,
+      orderItems: cartItems.map((item) => ({
+        name: item.name,
+        price: Number(item.price),
+        quantity: Number(item.quantity),
+        image: item.image,
+        product: item.product,
+      })),
+      paymentInfo: {
+        status: "Pending",
+      },
+      itemsPrice: subtotal,
+      taxPrice: taxes,
+      shippingPrice: shippingCost,
+      totalPrice: total,
+    };
+
+    const resultAction = await dispatch(createOrder(orderPayload));
+    if (createOrder.fulfilled.match(resultAction)) {
+      const orderId = resultAction.payload?.order?._id;
+      if (!orderId) {
+        toast.error("Could not initialize order.");
+        return;
+      }
+
+      const handler = window.PaystackPop.setup({
+        key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+        email: shippingInfo.email || "customer@example.com",
+        amount: Math.round(total * 100),
+        currency: "NGN",
+        callback: (response) => {
+          console.log("Paystack Reference Caught:", response.reference); // <-- Add this line
+          console.log("Full Paystack Response Object:", response);
+          dispatch(verifyPayment({ reference: response.reference, orderId }))
+            .unwrap()
+            .then(() => {
+              dispatch(clearCart());
+              toast.success("Payment successful and order saved.");
+              navigate("/payment/success");
+            })
+            .catch((error) => {
+              toast.error(error?.message || "Payment verification failed.");
+            });
+        },
+        onClose: () => {
+          toast.info("Payment cancelled.");
+          navigate("/payment/cancelled");
+        },
+      });
+      handler.openIframe();
+    } else {
+      toast.error(resultAction.payload?.message || "Unable to create order.");
+    }
+  };
 
   return (
     <div className="bg-slate-50 text-slate-900 min-h-screen px-4 py-8 md:px-8 lg:px-16 font-sans antialiased">
       {/* Header */}
-      <header className="mb-10 max-w-7xl mx-auto border-b border-slate-200 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <header className="mb-8 max-w-7xl mx-auto border-b border-slate-200 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">
             Review Your Order
           </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Please confirm your items, delivery destination, and pricing totals
+            before proceeding.
+          </p>
         </div>
-        <div className="text-xs sm:text-right text-slate-500 font-medium">
-          <p>Step 2 of 3</p>
+        <div className="text-xs sm:text-right text-slate-500 font-medium bg-slate-200/60 px-3 py-1.5 rounded-full self-start sm:self-auto">
+          Step 2 of 3
         </div>
       </header>
 
-      {/* Grid Layout */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* Cart Items */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm relative">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-4 mb-2 flex justify-between items-center">
-              <span>1. Shipment Items ({cartItems.length})</span>
+      {/* Single Tabular Layout Container */}
+      <main className="max-w-7xl mx-auto bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        {/* Desktop Table Header - Hidden on Mobile */}
+        <div className="hidden md:grid grid-cols-12 bg-slate-900 text-white text-xs uppercase tracking-wider font-semibold py-4 px-6">
+          <div className="col-span-1">Section</div>
+          <div className="col-span-7">Details Summary</div>
+          <div className="col-span-4 text-right">Actions / Financials</div>
+        </div>
+
+        <div className="divide-y divide-slate-200">
+          {/* ROW 1: SHIPMENT ITEMS */}
+          <div className="grid grid-cols-1 md:grid-cols-12 align-top hover:bg-slate-50/50 transition-colors p-6 gap-4 md:gap-0">
+            <div className="md:col-span-1 font-bold text-slate-500 whitespace-nowrap">
+              01. Items
+            </div>
+            <div className="md:col-span-7">
+              <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded">
+                {cartItems.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between py-3 first:pt-0 last:pb-0 gap-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={item.image}
+                        alt=" "
+                        className="w-12 h-12 object-cover rounded-md border border-slate-200"
+                      />
+                      <div>
+                        <h3 className="font-semibold text-slate-800 line-clamp-1">
+                          {item.name}
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Qty: {item.quantity} × {formatNaira(item.price)}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="font-semibold text-slate-700">
+                      {formatNaira(item.price * item.quantity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="md:col-span-4 text-left md:text-right">
               <button
                 onClick={() => navigate("/cart")}
-                className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-xs font-medium"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Edit
+                Modify Cart ({cartItems.length})
               </button>
-            </h2>
-            <div className="max-h-[340px] overflow-y-auto divide-y divide-slate-100 pr-1 [&::-webkit-scrollbar]:hidden">
-              {cartItems.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between py-4 gap-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={item.image}
-                      alt={" "}
-                      className="w-16 h-16 object-cover rounded-lg border border-slate-200/60"
-                    />
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900">
-                        {item.name}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Qty: {item.quantity} · {formatNaira(item.price)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-sm font-bold text-slate-900">
-                    {formatNaira(item.price * item.quantity)}
-                  </div>
+            </div>
+          </div>
+
+          {/* ROW 2: DELIVERY DETAILS */}
+          <div className="grid grid-cols-1 md:grid-cols-12 align-top hover:bg-slate-50/50 transition-colors p-6 gap-4 md:gap-0">
+            <div className="md:col-span-1 font-bold text-slate-500 whitespace-nowrap">
+              02. Shipping
+            </div>
+            <div className="md:col-span-7">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Destination Address
+                  </span>
+                  <p className="text-slate-700 font-medium">
+                    {shippingInfo.address}
+                  </p>
+                  <p className="text-slate-500 text-xs mt-0.5">
+                    {shippingInfo.city}, {shippingInfo.state},{" "}
+                    {shippingInfo.country}
+                  </p>
                 </div>
-              ))}
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Primary Recipient Contact
+                  </span>
+                  <p className="text-slate-700 font-medium">
+                    {shippingInfo.phoneNumber}
+                  </p>
+                  <p className="text-slate-400 text-xs mt-0.5">
+                    Standard Dispatch Delivery
+                  </p>
+                </div>
+              </div>
             </div>
+            {/* Explicitly placeholder block keeping alignment synced */}
+            <div className="hidden md:block md:col-span-4"></div>
           </div>
 
-          {/* Shipping Info */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm relative">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-4 mb-4 flex justify-between items-center">
-              <span>2. Delivery Details</span>
+          {/* ROW 3: TOTALS & FINAL ACTION BUTTON */}
+          <div className="grid grid-cols-1 md:grid-cols-12 align-top hover:bg-slate-50/50 transition-colors p-6 gap-4 md:gap-0">
+            <div className="md:col-span-1 font-bold text-slate-500 whitespace-nowrap">
+              03. Summary
+            </div>
+            <div className="md:col-span-7">
+              <div className="space-y-2 max-w-md">
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Subtotal</span>
+                  <span>{formatNaira(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>VAT (7.5%)</span>
+                  <span>{formatNaira(taxes)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Shipping Fee</span>
+                  <span>{formatNaira(shippingCost)}</span>
+                </div>
+                <div className="flex justify-between border-t border-slate-100 pt-2 text-sm font-bold text-slate-900">
+                  <span>Estimated Total Due</span>
+                  <span className="text-base text-blue-600">
+                    {formatNaira(total)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="md:col-span-4 flex items-end justify-start md:justify-end pt-4 md:pt-0">
               <button
-                onClick={() => navigate("/shipping")}
-                className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-xs font-medium"
+                onClick={createAndPay}
+                disabled={status === "loading"}
+                className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm text-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M11 17h2m-1-12a9 9 0 100 18 9 9 0 000-18z"
-                  />
-                </svg>
-                Edit
+                {status === "loading"
+                  ? "Processing Order..."
+                  : "Confirm & Pay Now"}
               </button>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-600 leading-relaxed">
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-                <span className="block text-[11px] font-bold text-slate-400 uppercase mb-2">
-                  Shipping Address
-                </span>
-                <p>{shippingInfo.address}</p>
-                <p>
-                  {shippingInfo.city}, {shippingInfo.state}{" "}
-                  {shippingInfo.country}
-                </p>
-              </div>
-              <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-                <span className="block text-[11px] font-bold text-slate-400 uppercase mb-2">
-                  Contact Info
-                </span>
-                <p className="font-medium text-slate-900">
-                  {shippingInfo.phoneNumber}
-                </p>
-              </div>
             </div>
           </div>
         </div>
-
-        {/* Right Column: Summary */}
-        <div className="lg:col-span-5 lg:sticky lg:top-6">
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-4 mb-4">
-              Order Summary
-            </h2>
-            <div className="space-y-3 text-sm text-slate-600 pb-4 border-b border-slate-100">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>{formatNaira(subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Shipping</span>
-                <span>{formatNaira(shippingCost)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tax (7.5%)</span>
-                <span>{formatNaira(taxes)}</span>
-              </div>
-            </div>
-            <div className="flex justify-between items-baseline pt-4 mb-6">
-              <span className="text-sm font-bold">Total to pay</span>
-              <span className="text-2xl font-black">{formatNaira(total)}</span>
-            </div>
-            <button onClick={proceedToPayment} className="w-full bg-slate-900 text-white py-3.5 px-6 rounded-lg text-sm font-bold hover:bg-slate-800 flex items-center justify-center gap-2">
-              Proceed to Payment
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2.2"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
+      </main>
     </div>
   );
 };

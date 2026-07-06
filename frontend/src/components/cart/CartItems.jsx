@@ -10,7 +10,7 @@ const CartItem = ({ item, updateQuantity, removeItem, formatNaira }) => {
       <img
         src={item?.image || "https://via.placeholder.com/80x80?text=No+Image"}
         alt={item?.name || "Product Asset"}
-        className="w-20 h-20 object-cover rounded-xl bg-gray-100 flex-shrink-0"
+        className="w-20 h-20 object-cover rounded-xl bg-gray-100 shrink-0"
       />
 
       {/* Product Information Context Details Row */}
@@ -34,7 +34,7 @@ const CartItem = ({ item, updateQuantity, removeItem, formatNaira }) => {
               -
             </button>
             
-            <span className="px-3 py-1 text-sm font-medium text-gray-800 bg-white min-w-[2rem] text-center">
+            <span className="px-3 py-1 text-sm font-medium text-gray-800 bg-white min-w-8 text-center">
               {currentQuantity}
             </span>
             

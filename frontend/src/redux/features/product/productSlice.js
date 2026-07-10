@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { getProduct, getProductDetails } from "./productAPI";
+import { createReview, getProduct, getProductDetails } from "./productAPI";
 
 const productSlice = createSlice({
   name: "product",
@@ -11,10 +11,15 @@ const productSlice = createSlice({
     product: null,
     resultsPerPage: 2,
     totalPages: 0,
+    reviewSuccess: false,
+    reviewLoading: false,
   },
   reducers: {
     removeErrors: (state) => {
       state.error = null;
+    },
+    removeSuccess: (state) => {
+      state.reviewSuccess = false;
     },
   },
   extraReducers: (builder) => {
@@ -55,8 +60,25 @@ const productSlice = createSlice({
           action.payload?.message || action.payload ||
           "Something went wrong while fetching the product.";
       })
+
+    // Create review
+      .addCase(createReview.pending, (state)=> {
+        state.reviewLoading = true;
+        state.error = null;
+      })
+      .addCase(createReview.fulfilled, (state, action) => {
+        state.reviewLoading = false;
+        state.error = null;
+        state.reviewSuccess = true;
+      })
+      .addCase(createReview.rejected, (state, action) => {
+        state.reviewLoading = false;
+        state.error =
+          action.payload?.message || action.payload ||
+          "Something went wrong while creating the review.";
+      })
   },
 });
 
-export const { removeErrors } = productSlice.actions;
+export const { removeErrors, removeSuccess } = productSlice.actions;
 export default productSlice.reducer;

@@ -9,7 +9,7 @@ export const getProduct = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      // 1. Create a dynamic query object
+      // Create a dynamic query object
       const params = new URLSearchParams();
 
       if (keyword) params.append("keyword", keyword);
@@ -19,7 +19,7 @@ export const getProduct = createAsyncThunk(
       if (sort) params.append("sort", sort);
       if (limit) params.append("limit", String(limit));
 
-      // 2. Automatically formats to: /api/v1/products?keyword=...&page=...&category=...
+      // Automatically formats to: /api/v1/products?keyword=...&page=...&category=...
       const link = `/api/v1/products?${params.toString()}`;
 
       const response = await axios.get(link);
@@ -41,6 +41,22 @@ export const getProductDetails = createAsyncThunk(
       const link = `/api/v1/product/${id}`;
       const response = await axios.get(link);
       return response.data;
+    } catch (error) {
+      console.error("Product fetch error:", error);
+      return rejectWithValue(
+        error.response?.data || "An error occurred while fetching the product.",
+      );
+    }
+  },
+);
+
+// Product Details (Function for getting singe product details)
+export const createReview = createAsyncThunk(
+  "product/createReview",
+  async ({rating, comment, productId}, { rejectWithValue }) => {
+    try {
+      const {data} = await axios.put(`/api/v1/review`, { rating, comment, productId });
+      return data;
     } catch (error) {
       console.error("Product fetch error:", error);
       return rejectWithValue(

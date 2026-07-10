@@ -15,13 +15,13 @@ import {
 const ProductDetails = () => {
   const dispatch = useDispatch();
   const { id } = useParams();
-  
+
   const { product, loading, error } = useSelector((state) => state.product);
   const {
     loading: cartLoading,
     error: cartError,
     success,
-    cartItems
+    cartItems,
   } = useSelector((state) => state.cart);
 
   const [selectedImage, setSelectedImage] = useState("");
@@ -93,7 +93,7 @@ const ProductDetails = () => {
       toast.error(
         cartError?.message || cartError || "Failed to update shopping cart.",
       );
-      dispatch(removeCartErrors()); 
+      dispatch(removeCartErrors());
     }
   }, [success, cartError, dispatch]);
 
@@ -140,40 +140,43 @@ const ProductDetails = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 md:py-12 text-slate-800 font-sans">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-12">
-        {/* LEFT COLUMN: Image Showcase Area */}
-        <div className="space-y-4">
-         <div className="aspect-square overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 flex items-center justify-center">
-            {/* FIX: Only render <img> if selectedImage contains a valid URL string */}
+        {/* LEFT COLUMN: Main Showcase Gallery Area */}
+        <div className="flex flex-col gap-4">
+          <div className="aspect-square w-full overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 flex items-center justify-center shadow-sm">
             {selectedImage ? (
               <img
                 src={selectedImage}
-                alt={product?.name || "Product Image"}
-                className="h-full w-full object-cover"
+                alt={product?.name || "Product Showcase"}
+                className="h-full w-full object-cover transition-all duration-300 transform hover:scale-105"
               />
             ) : (
-              <div className="text-slate-300 text-xs">Loading Image Asset...</div>
+              <div className="text-slate-400 text-sm font-medium">
+                No Image Asset Available
+              </div>
             )}
-          </div>   
+          </div>
 
+          {/* DYNAMIC LAYER: Only render thumbnail options grid row if multiple files exist */}
           {product?.image && product.image.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-1">
+            <div className="flex flex-wrap gap-3 items-center justify-start py-1">
               {product.image.map((img, index) => {
                 const refinedUrl = cleanImageUrl(img.url);
+                const isActive = selectedImage === refinedUrl;
                 return (
                   <button
                     key={index}
                     type="button"
                     onClick={() => setSelectedImage(refinedUrl)}
-                    className={`shrink-0 overflow-hidden rounded-xl border-2 transition ${
-                      selectedImage === refinedUrl
-                        ? "border-black scale-95"
-                        : "border-transparent opacity-70"
+                    className={`relative w-16 h-16 rounded-xl overflow-hidden bg-slate-50 border-2 shadow-sm transition-all duration-200 outline-none ${
+                      isActive
+                        ? "border-neutral-900 scale-95 opacity-100 ring-2 ring-neutral-900/10"
+                        : "border-slate-200 opacity-60 hover:opacity-100 hover:border-slate-400"
                     }`}
                   >
                     <img
                       src={refinedUrl}
-                      alt="thumbnail"
-                      className="h-16 w-16 object-cover"
+                      alt={`Thumbnail ${index + 1}`}
+                      className="h-full w-full object-cover"
                     />
                   </button>
                 );
@@ -287,7 +290,6 @@ const ProductDetails = () => {
                     className="border-b border-slate-50 pb-6 last:border-0 last:pb-0"
                   >
                     <div className="mb-1 flex items-center justify-between">
-
                       <span className="text-sm font-medium text-slate-900">
                         {review.name}
                       </span>
@@ -327,7 +329,7 @@ const ProductDetails = () => {
                     rows="3"
                     value={userComment}
                     onChange={(event) => setUserComment(event.target.value)}
-                    placeholder="What did you like or dislike?"
+                    placeholder="Drop a comment for this product..."
                     className="w-full resize-none rounded-lg border border-slate-200 bg-white p-2.5 text-xs focus:border-slate-400 focus:outline-none"
                   />
                 </div>

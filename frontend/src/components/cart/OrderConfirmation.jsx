@@ -2,17 +2,15 @@ import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import {
-  createOrder,
-  verifyPayment,
-} from "../../redux/features/payment/paymentAPI";
+import { createOrder } from "../../redux/features/order/orderAPI";
+import { verifyPayment } from "../../redux/features/payment/paymentAPI";
 import { clearCart } from "../../redux/features/cart/cartSlice";
 
 const OrderConfirmation = () => {
   const { cartItems = [], shippingInfo = {} } = useSelector(
     (state) => state.cart,
   );
-  const { currentOrder, status } = useSelector((state) => state.payment);
+  const { currentOrder, createOrderStatus } = useSelector((state) => state.order);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -232,10 +230,10 @@ const OrderConfirmation = () => {
             <div className="md:col-span-4 flex items-end justify-start md:justify-end pt-4 md:pt-0">
               <button
                 onClick={createAndPay}
-                disabled={status === "loading"}
+                disabled={createOrderStatus === "loading"}
                 className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm text-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {status === "loading"
+                {createOrderStatus === "loading"
                   ? "Processing Order..."
                   : "Confirm & Pay Now"}
               </button>

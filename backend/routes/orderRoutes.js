@@ -7,9 +7,9 @@ const router = express.Router();
 // User
 router.post("/new/order", verifyUserAuthentication, createOrder);
 router.get("/my/orders", verifyUserAuthentication, allMyOrders);
+router.get("/order/:id", verifyUserAuthentication, getSingleOrder);
 
 // Admin
-router.get("/admin/order/:id", verifyUserAuthentication,roleBasedAccess("admin"), getSingleOrder);
 router.get("/admin/orders", verifyUserAuthentication, roleBasedAccess("admin"), getAllOrders);
 router.put("/admin/order/:id", verifyUserAuthentication,roleBasedAccess("admin"), updateOrderStatus);
 router.delete("/admin/order/:id", deleteOrder);

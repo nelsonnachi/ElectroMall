@@ -18,12 +18,14 @@ const Cart = () => {
   );
   const { isAuthenticated } = useSelector((state) => state.user);
 
+  // Strips decimals completely to match the local formatting rule style
   const formatNaira = (amount) => {
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
       currency: "NGN",
       minimumFractionDigits: 0,
-    }).format(amount || 0);
+      maximumFractionDigits: 0,
+    }).format(Math.floor(amount || 0));
   };
 
   const updateQuantity = (productId, newQuantity) => {
@@ -34,10 +36,8 @@ const Cart = () => {
     dispatch(removeItemFromCart(productId));
   };
 
-  // Render a loading indicator while your cart state processes operations
   if (loading && (!cartItems || cartItems.length === 0)) return <WaveLoader />;
 
-  // Conditional Page Wrappers: Render a safe fallback boundary layout if a severe error occurs
   if (error) {
     return (
       <div className="max-w-3xl mx-auto p-12 text-center text-rose-600 font-semibold font-sans">
@@ -61,8 +61,8 @@ const Cart = () => {
         0,
       )
     : 0;
-  const shipping = subtotal > 0 ? 4500.0 : 0; // Flat local shipping rate fee inside Nigeria
-  const tax = subtotal * 0.075; // 7.5% standard Nigerian VAT rate rules
+  const shipping = subtotal > 0 ? 4500.0 : 0;
+  const tax = subtotal * 0.075;
   const total = subtotal + shipping + tax;
 
   const handleCheckout = (e) => {
@@ -75,38 +75,34 @@ const Cart = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen py-12 px-4 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
+    <div className="bg-gray-50 min-h-screen py-12 font-sans w-full">
+      {/* Container configurations synced fluidly to mirror Navbar width fields perfectly */}
+      <div className="container mx-auto px-6 w-full">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8 tracking-tight">Shopping Cart</h1>
 
         {!cartItems || cartItems.length === 0 ? (
-          /* Clean Empty Card State layout if your items drop down to zero elements */
           <div className="text-center bg-white p-12 rounded-2xl shadow-sm border border-gray-100 max-w-md mx-auto mt-12">
             <div className="text-4xl mb-4">🛒</div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">
-              Your cart is empty
-            </h2>
-            <p className="text-gray-500 text-sm mb-6">
-              Looks like you haven't added anything to your cart yet.
-            </p>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Your cart is empty</h2>
+            <p className="text-gray-500 text-sm mb-6">Looks like you haven't added anything to your cart yet.</p>
             <Link
               to="/shop"
-              className="inline-block w-full bg-indigo-600 text-white text-center font-semibold px-6 py-3 rounded-xl hover:bg-indigo-700 transition shadow-sm"
+              className="inline-block w-full bg-indigo-600 text-white text-center font-semibold px-6 py-3 rounded-xl hover:bg-indigo-700 transition shadow-sm cursor-pointer"
             >
               Continue Shopping
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left Column: Product rows display card stream */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Left Column Area: Items Stream */}
             <div className="lg:col-span-7 space-y-4">
-              {/* Continue Shopping Link */}
-              <div className="mt-6">
+              <div className="mb-2">
                 <Link
                   to="/shop"
-                  className="inline-block text-indigo-600 font-semibold hover:text-indigo-800 transition"
+                  className="inline-block text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition cursor-pointer"
                 >
-                  ← Continue Shopping
+                  &larr; Continue Shopping
                 </Link>
               </div>
               {cartItems.map((item) => (
@@ -120,8 +116,8 @@ const Cart = () => {
               ))}
             </div>
 
-            {/* Right Column: Checkout Financial Summary Form Panel */}
-            <div className="lg:col-span-5">
+            {/* Right Column Area: Order Summary Sticky Card */}
+            <div className="lg:col-span-5 sticky top-6">
               <OrderSummary
                 subtotal={subtotal}
                 shipping={shipping}
@@ -131,6 +127,7 @@ const Cart = () => {
                 formatNaira={formatNaira}
               />
             </div>
+
           </div>
         )}
       </div>

@@ -3,8 +3,8 @@ import { useSelector } from "react-redux";
 import WaveLoader from "./WaveLoader";
 import { Navigate, useLocation } from 'react-router-dom'; 
 
-const ProtectedRoute = ({ element }) => {
-    const { isAuthenticated, loading } = useSelector((state) => state.user);
+const ProtectedRoute = ({ element, adminOnly = false }) => {
+    const { isAuthenticated, loading, user } = useSelector((state) => state.user);
     const location = useLocation(); 
 
     if (loading) {
@@ -13,6 +13,10 @@ const ProtectedRoute = ({ element }) => {
 
     if (!isAuthenticated) {
         return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />
+    }
+
+    if(adminOnly && user.role !== 'admin'){
+        return <Navigate to='/' />
     }
 
     return element;

@@ -14,7 +14,7 @@ import {
   deleteUser
 } from "../controllers/userController.js";
 import { roleBasedAccess, verifyUserAuthentication } from "../middlewares/userAuth.js";
-import { uploadSingleImage } from "../middlewares/multerUpload.js";
+import { upload  } from "../middlewares/multerUpload.js";
 
 const router = express.Router();
 
@@ -25,7 +25,7 @@ router.post("/logout", logoutUser);
 router.post("/password/forgot", requestPasswordReset);
 router.post("/password/reset/:token", resetPassword);
 router.get("/profile", verifyUserAuthentication, getUserProfile);
-router.put("/profile/update", verifyUserAuthentication, uploadSingleImage.single("avatar") ,updateProfile);
+router.put("/profile/update", verifyUserAuthentication, upload.single("avatar") ,updateProfile);
 router.put("/password/update", verifyUserAuthentication, updatePassword);
 
 // admin-------------------------

@@ -111,63 +111,7 @@ export const logoutUser = async (req, res) => {
     .json({ success: true, message: "User logged out successfully" });
 };
 
-// @desc    Forgot password request
-// export const forgotPassword = async (req, res) => {
-//   const { email } = req.body;
 
-//   try {
-//     const user = await User.findOne({ email });
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     const resetToken = crypto.randomBytes(20).toString("hex");
-//     user.resetPasswordToken = resetToken;
-//     user.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
-//     await user.save();
-
-//     const resetUrl = `http://localhost:8000/password/reset/${resetToken}`;
-
-//     try {
-//       const transporter = nodemailer.createTransport({
-//         service: "Gmail",
-//         auth: {
-//           user: process.env.EMAIL_USER,
-//           pass: process.env.EMAIL_PASS,
-//         },
-//       });
-
-//       const mailOptions = {
-//         from: process.env.EMAIL_USER,
-//         to: user.email,
-//         subject: "Password Reset Request",
-//         html: `
-//           <p>You have requested a password reset.</p>
-//           <p>Please click the link below to reset your password:</p>
-//           <a href="${resetUrl}" target="_blank">Reset Password</a>
-//           <p>This link will expire in 30 minutes.</p>
-//         `,
-//       };
-
-//       await transporter.sendMail(mailOptions);
-//       res
-//         .status(200)
-//         .json({ success: true, message: "Password reset link sent to email" });
-//     } catch (error) {
-//       user.resetPasswordToken = undefined;
-//       user.resetPasswordExpire = undefined;
-//       await user.save();
-//       res.status(500).json({
-//         success: false,
-//         message: "Failed to send email. Please try again later.",
-//       });
-//     }
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// };
-
-// @desc  Request Reset password (Reset code and link)
 export const requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;

@@ -28,11 +28,10 @@ export const verifyPayment = async (req, res) => {
         status: "success",
         reference,
       };
-      order.orderStatus = "Paid";
       order.paidAt = new Date();
 
       await order.save();
-
+ 
       return res.json({ success: true, message: "Payment verified", order });
     } else {
       return res

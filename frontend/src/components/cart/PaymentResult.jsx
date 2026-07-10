@@ -22,12 +22,12 @@ const PaymentResult = ({ status }) => {
         </p>
         <div className="mt-6 flex flex-col gap-3">
           <Link
-            to="/profile"
+            to="/my/orders"
             className="rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
           >
             View My Orders
           </Link>
-          <Link
+          <Link 
             to="/shop"
             className="rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700"
           >

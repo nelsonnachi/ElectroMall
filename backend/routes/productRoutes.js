@@ -11,10 +11,11 @@ import {
   deleteReview,
 } from "../controllers/productController.js";
 import { verifyUserAuthentication, roleBasedAccess } from "../middlewares/userAuth.js";
+import { upload } from "../middlewares/multerUpload.js";
 
 const router = express.Router();
 
-router.post("/product/new", verifyUserAuthentication, roleBasedAccess("admin"), createProduct);
+router.post("/admin/product/create", verifyUserAuthentication, roleBasedAccess("admin"), upload.array("images", 5), createProduct);
 router.get("/products", getAllProducts);
 router.put("/product/:id", verifyUserAuthentication, roleBasedAccess("admin"), updateProduct);
 router.delete("/product/:id", verifyUserAuthentication, roleBasedAccess("admin"), deleteProduct);

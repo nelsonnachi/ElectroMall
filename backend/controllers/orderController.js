@@ -74,7 +74,18 @@ export const getSingleOrder = async (req, res) => {
 // All my orders
 export const allMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user._id });
+    // Fetches orders for the user and sorts them by newest first
+    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
+
+    // Handle case where user has no orders yet
+    if (!orders || orders.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "You have no orders yet",
+        count: 0,
+        orders: [],
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -89,6 +100,7 @@ export const allMyOrders = async (req, res) => {
     });
   }
 };
+
 
 // Get all orders (admin)
 export const getAllOrders = async (req, res) => {

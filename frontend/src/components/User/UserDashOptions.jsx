@@ -8,6 +8,9 @@ const UserDashOptions = ({ user, closeDropdown }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+   // Check if the current browser window path starts with admin routing paths
+  const isAdminPanel = location.pathname.startsWith("/admin");
+
   const options = [
     { name: "Orders", path: "/my/orders" },
     { name: "Account", path: "/profile" },
@@ -32,12 +35,21 @@ const UserDashOptions = ({ user, closeDropdown }) => {
   };
 
 
+  // Conditional rendering based on user role and dashboard location context
   if (user && user.role === "admin") {
-    options.unshift({
-      name: "Admin Dashboard",
-      path: "/admin/dashboard",
-    });
+    if (isAdminPanel) {
+      options.unshift({
+        name: "Home",
+        path: "/",
+      });
+    } else {
+      options.unshift({
+        name: "Admin Dashboard",
+        path: "/admin/dashboard",
+      });
+    }
   }
+
 
   return (
     <div className="flex flex-col w-full">

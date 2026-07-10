@@ -1,27 +1,48 @@
 import Product from "../models/productModel.js";
 import buildProductQuery from "../utils/buildProductQuery.js";
+import { v2 as cloudinary } from "cloudinary";
 
 // @desc    Create a new product
 export const createProduct = async (req, res) => {
   try {
-    // Take the authenticated user's id and attach it as the creator of this product
-    // (Explaination: req.user.id simply means the mongodb id of the user document that is currently logged in and making this request. This is possible because the verifyUserAuthentication middleware fetches the user document from the database and attaches it to the req object as req.user. So when we do req.user.id, we are accessing the id field of that user document, which is the unique identifier for that user in MongoDB. By assigning this value to req.body.user, we are essentially linking the product being created to the user who created it, allowing us to track ownership and perform authorization checks later on if needed.)
-    req.body.user = req.user.id;
+    // Attach the authenticated user's ID to track ownership
+    const userId = req.user.id;
 
-    // pull out only the specific fields you need from your body or frontend request
-    const { name, price, description, category, brand, stock, image, user } =
-      req.body;
+    // Pull out only the specific text fields needed from req.body
+    const { name, price, description, category, brand, stock } = req.body;
 
-    // Pass those exact fields directly into the creation method
+    // Array to store Cloudinary credentials for the product images
+    let uploadedImages = [];
+
+    // Handle multiple file uploads if sent from the frontend
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        // Convert raw file format from memory buffer to base64
+        const base64Image = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+
+        // Upload image safely to Cloudinary
+        const imageDetails = await cloudinary.uploader.upload(base64Image, {
+          folder: "products", // Saves images in a dedicated product folder
+        });
+
+        // Push credentials using your exact model schema keys (public_id, url)
+        uploadedImages.push({
+          public_id: imageDetails.public_id,
+          url: imageDetails.secure_url,
+        });
+      }
+    }
+
+    // Pass those fields directly into the creation method
     const product = await Product.create({
       name,
-      price,
+      price: Number(price) || 0,
       description,
       category,
       brand,
-      stock,
-      image,
-      user,
+      stock: Number(stock) || 0,
+      image: uploadedImages, // Maps directly to your schema array
+      user: userId,
     });
 
     res.status(201).json({
@@ -37,10 +58,11 @@ export const createProduct = async (req, res) => {
   }
 };
 
+
 // @route   GET /api/v1/products
 export const getAllProducts = async (req, res) => {
   try {
-    const resultsPerPage = Number(req.query.limit) || 2;
+    const resultsPerPage = Number(req.query.limit) || 12;
     const productQuery = new buildProductQuery(Product.find(), req.query)
       .search()
       .filter()
@@ -121,6 +143,39 @@ export const deleteProduct = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Delete a product 2
+export const deleteProduct2 = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const product = await Product.findById(id);
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+
+    // Loop through the schema image array and clear them out of Cloudinary servers
+    if (product.image && product.image.length > 0) {
+      for (const img of product.image) {
+        if (img.public_id) {
+          await cloudinary.uploader.destroy(img.public_id);
+        }
+      }
+    }
+
+    await product.deleteOne();
+
+    res
+      .status(200)
+      .json({ success: true, message: "Productdeleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 
 // @desc    Get a single product
 export const getSingleProduct = async (req, res) => {

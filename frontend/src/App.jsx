@@ -1,6 +1,7 @@
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import UserLayout from "./layout/UserLayout";
+import AdminLayout from "./layout/AdminLayout";
 import Home from "./pages/Home";
 
 //Import Toastify components and CSS styles
@@ -24,6 +25,11 @@ import Shipping from "./components/cart/Shipping";
 import OrderConfirmation from "./components/cart/OrderConfirmation";
 import Payment from "./components/cart/Payment";
 import PaymentResult from "./components/cart/PaymentResult";
+import MyOrders from "./components/order/MyOrders";
+import OrderDetails from "./components/order/OrderDetails";
+import Dashboard from "./components/admin/Dashboard";
+import ProductsList from "./components/admin/ProductsList";
+import CreateProduct from "./components/admin/CreateProduct";
 
 const App = () => {
   const { isAuthenticated, user } = useSelector((state) => state.user);
@@ -80,8 +86,29 @@ const App = () => {
               <ProtectedRoute element={<PaymentResult status="cancelled" />} />
             }
           />
+          <Route
+            path="/my/orders"
+            element={<ProtectedRoute element={<MyOrders />} />}
+          />
+          <Route
+            path="/order/:id"
+            element={<ProtectedRoute element={<OrderDetails />} />}
+          />
         </Route>
 
+        {/* Admin layout and routes  */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute element={<AdminLayout />} adminOnly={true} />
+          }
+        >
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="products" element={<ProductsList />} />
+          <Route path="product/create" element={<CreateProduct />} />
+        </Route>
+
+        {/* Auth credentials */}
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/password/forgot" element={<ForgotPassword />} />

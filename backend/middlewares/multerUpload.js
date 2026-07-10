@@ -1,3 +1,4 @@
+
 import multer from "multer";
 
 // Tell Multer to keep files in memory temporary buffers
@@ -12,4 +13,5 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-export const uploadSingleImage = multer({ storage, fileFilter });
+// Export the base instance directly so it can parse any format
+export const upload = multer({ storage, fileFilter });

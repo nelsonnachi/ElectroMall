@@ -22,6 +22,7 @@ const adminSlice = createSlice({
     users: [],
     user: {},
     message: null,
+    orders: [],
   },
   reducers: {
     removeErrors: (state) => {

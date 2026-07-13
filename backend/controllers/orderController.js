@@ -115,10 +115,9 @@ export const getAllOrders = async (req, res) => {
       0,
     );
 
-    // 3. Send data and sales calculations back to the Admin Dashboard
     res.status(200).json({
       success: true,
-      totalAmount: Number(totalAmount.toFixed(2)), // Keeps decimals clean (e.g., 1450.50)
+      totalAmount: Number(totalAmount.toFixed(2)),
       count: orders.length,
       orders,
     });

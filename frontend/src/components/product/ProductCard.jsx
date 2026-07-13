@@ -99,7 +99,7 @@ const ProductCard = ({ product }) => {
             to={`/product/${targetId}`}
             className="text-xs text-indigo-600 font-semibold flex items-center gap-0.5 hover:text-indigo-700 hover:underline cursor-pointer"
           >
-            View Details <ChevronRight size={14} />
+            View <ChevronRight size={14} />
           </Link>
         </div>
       </div>

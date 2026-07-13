@@ -431,7 +431,7 @@ export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Safety check: Prevent the admin from deleting themselves
+    //  Prevent the admin from deleting themselves
     if (req.user && req.user._id.toString() === id) {
       return res.status(400).json({
         success: false,
@@ -439,8 +439,7 @@ export const deleteUser = async (req, res) => {
       });
     }
 
-    // Find and delete the user in a single database operation
-    const user = await User.findByIdAndDelete(id);
+    const user = await User.findById(id);
 
     // If no user was found with that ID
     if (!user) {
@@ -450,7 +449,16 @@ export const deleteUser = async (req, res) => {
       });
     }
 
-    // Success response
+    if (
+      user.avatar?.public_id && 
+      user.avatar.public_id !== "default_avatar"
+    ) {
+      await cloudinary.uploader.destroy(user.avatar.public_id);
+    }
+
+    // Remove the document from the MongoDB database collection
+    await user.deleteOne();
+
     res.status(200).json({
       success: true,
       message: "User deleted successfully",
@@ -464,3 +472,4 @@ export const deleteUser = async (req, res) => {
     });
   }
 };
+

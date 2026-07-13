@@ -1,14 +1,22 @@
 import React, { useEffect } from "react";
-import { Edit, Trash2, Plus, Star, PackageOpen } from "lucide-react";
+import { Edit, Trash2, Plus, Star, PackageOpen, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchAdminProducts } from "../../redux/features/admin/adminAPI";
+import {
+  deleteProduct,
+  fetchAdminProducts,
+} from "../../redux/features/admin/adminAPI";
 import WaveLoader from "../WaveLoader";
-import { removeErrors } from "../../redux/features/admin/adminSlice";
+import {
+  removeErrors,
+  removeSuccess,
+} from "../../redux/features/admin/adminSlice";
+import { toast } from "react-toastify";
 
 const AllProducts = () => {
-  const { products, error, loading } = useSelector((state) => state.admin);
-  console.log(products);
+  const { products, error, loading, deleting } = useSelector(
+    (state) => state.admin,
+  );
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -21,6 +29,21 @@ const AllProducts = () => {
       dispatch(removeErrors());
     }
   }, [error, dispatch]);
+
+  const handleDelete = async (productId) => {
+    const isConfirmed = window.confirm(
+      "Are you sure you want to delete this product?",
+    );
+    if (!isConfirmed) return;
+
+    try {
+      await dispatch(deleteProduct(productId)).unwrap();
+      toast.success("Product deleted successfully");
+      dispatch(removeSuccess());
+    } catch (err) {
+      toast.error("Delete failed");
+    }
+  };
 
   if (loading) return <WaveLoader />;
   if (error)
@@ -213,19 +236,24 @@ const AllProducts = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center space-x-2">
                           <Link
-                            to={`/admin/products/edit/${product._id}`}
+                            to={`/admin/product/edit/${product._id}`}
                             className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all"
                             title="Edit Product"
                           >
                             <Edit className="w-4 h-4" />
                           </Link>
-                          <Link
-                            to={`/admin/products/edit/${product._id}`}
+                          <button
                             className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
                             title="Delete Product"
+                            onClick={() => handleDelete(product._id)}
+                            disabled={deleting[product._id]}
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </Link>
+                            {deleting[product._id] ? (
+                              <Loader2 className="animate-spin w-4 h-4" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
                         </div>
                       </td>
                     </tr>

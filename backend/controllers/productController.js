@@ -58,7 +58,6 @@ export const createProduct = async (req, res) => {
   }
 };
 
-
 // @route   GET /api/v1/products
 export const getAllProducts = async (req, res) => {
   try {
@@ -108,44 +107,78 @@ export const updateProduct = async (req, res) => {
         .json({ success: false, message: "Product not found" });
     }
 
-    const updatedProduct = await Product.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const { name, price, description, category, brand, stock } = req.body;
 
-    res.status(200).json({ success: true, product: updatedProduct });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+    if (name) product.name = name;
+    if (description) product.description = description;
+    if (brand) product.brand = brand;
+    if (category) product.category = category;
 
-// @desc    Delete a product
-export const deleteProduct = async (req, res) => {
-  try {
-    // 1. Extract the id variable cleanly
-    const { id } = req.params;
+    // Explicitly validate and parse numeric properties if provided
+    if (price !== undefined) product.price = Number(price) || 0;
+    if (stock !== undefined) product.stock = Number(stock) || 0;
 
-    // 2. Look up and delete in a single step
-    const product = await Product.findByIdAndDelete(id);
+    if (req.files && req.files.length > 0) {
+      if (product.image && product.image.length > 0) {
+        for (const img of product.image) {
+          if (img.public_id) {
+            await cloudinary.uploader.destroy(img.public_id);
+          }
+        }
+      }
 
-    // 3. If product is null, it means it didn't exist in the database
-    if (!product) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Product not found" });
+      let updatedImages = [];
+
+      for (const file of req.files) {
+        const base64Image = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+
+        const imageDetails = await cloudinary.uploader.upload(base64Image, {
+          folder: "products",
+        });
+
+        updatedImages.push({
+          public_id: imageDetails.public_id,
+          url: imageDetails.secure_url,
+        });
+      }
+
+      product.image = updatedImages;
+    } else if (req.body.remainingImages) {
+      const remaining = JSON.parse(req.body.remainingImages);
+
+      for (const oldImg of product.image) {
+        const stillExists = remaining.some(
+          (r) => r.public_id === oldImg.public_id,
+        );
+
+        if (!stillExists && oldImg.public_id) {
+          await cloudinary.uploader.destroy(oldImg.public_id);
+        }
+      }
+
+      product.image = remaining;
     }
 
-    // 4. Return success response
-    res
-      .status(200)
-      .json({ success: true, message: "Product deleted successfully" });
+    await product.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Product updated successfully.",
+      product,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Backend Product Update Failure Log Details:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error while updating product",
+      error: error.message,
+    });
   }
 };
 
-// Delete a product 2
-export const deleteProduct2 = async (req, res) => {
+// Delete a product
+export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -157,25 +190,24 @@ export const deleteProduct2 = async (req, res) => {
         .json({ success: false, message: "Product not found" });
     }
 
-    // Loop through the schema image array and clear them out of Cloudinary servers
     if (product.image && product.image.length > 0) {
-      for (const img of product.image) {
-        if (img.public_id) {
-          await cloudinary.uploader.destroy(img.public_id);
-        }
-      }
+      const deletePromises = product.image
+        .filter((img) => img.public_id) 
+        .map((img) => cloudinary.uploader.destroy(img.public_id));
+
+      // Execute all Cloudinary deletions at the same time
+      await Promise.all(deletePromises);
     }
 
     await product.deleteOne();
 
     res
       .status(200)
-      .json({ success: true, message: "Productdeleted successfully" });
+      .json({ success: true, message: "Product deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 // @desc    Get a single product
 export const getSingleProduct = async (req, res) => {

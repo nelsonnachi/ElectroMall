@@ -17,8 +17,8 @@ const router = express.Router();
 
 router.post("/admin/product/create", verifyUserAuthentication, roleBasedAccess("admin"), upload.array("images", 5), createProduct);
 router.get("/products", getAllProducts);
-router.put("/product/:id", verifyUserAuthentication, roleBasedAccess("admin"), updateProduct);
-router.delete("/product/:id", verifyUserAuthentication, roleBasedAccess("admin"), deleteProduct);
+router.put("/admin/product/:id", verifyUserAuthentication, roleBasedAccess("admin"),upload.array("images", 5), updateProduct);
+router.delete("/admin/product/:id", verifyUserAuthentication, roleBasedAccess("admin"), deleteProduct);
 router.get("/product/:id", getSingleProduct);
 router.get("/admin/products", verifyUserAuthentication, roleBasedAccess("admin"), getAdminProducts);
 router.put("/review", verifyUserAuthentication, createReviewForProduct);

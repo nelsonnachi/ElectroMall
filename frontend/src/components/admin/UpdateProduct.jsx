@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Save,
@@ -15,17 +15,20 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useSelector, useDispatch } from "react-redux";
-import { createProduct } from "../../redux/features/admin/adminAPI";
+import { updateProduct } from "../../redux/features/admin/adminAPI";
+import { getProductDetails } from "../../redux/features/product/productAPI";
 import {
   removeErrors,
   removeSuccess,
 } from "../../redux/features/admin/adminSlice";
 
-const CreateProduct = () => {
-  // Relying entirely on Redux state for loading status
-  const { success, error, loading } = useSelector((state) => state.admin);
+const UpdateProduct = () => {
+  const { id } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const { product } = useSelector((state) => state.product);
+  const { success, error, loading } = useSelector((state) => state.admin);
 
   // Local Form Field States
   const [name, setName] = useState("");
@@ -40,47 +43,57 @@ const CreateProduct = () => {
   const [imagePreviews, setImagePreviews] = useState([]);
 
   const categories = [
-    "Laptop",
-    "Mobile",
-    "TV",
-    "AC",
-    "Fridge",
-    "Washing Machine",
-    "Headphones",
-    "Camera",
-    "Smartwatch",
-    "Speaker",
-  ];
-  const brands = [
-    "Apple",
-    "Samsung",
-    "Sony",
-    "LG",
-    "Dell",
-    "HP",
-    "Lenovo",
-    "Asus",
-    "Acer",
-    "Microsoft",
+    "Air Conditioner",
+    "Electronics",
+    "Home Appliances",
+    "Smartphones",
+    "Computers & Accessories",
+    "Audio & Speakers",
   ];
 
+  // Safeguard: Fetch details if page is reloaded or item mismatch occurs
+  useEffect(() => {
+    if (id && product?._id !== id) {
+      dispatch(getProductDetails(id));
+    }
+  }, [dispatch, id, product]);
+
+  useEffect(() => {
+    if (product && product._id === id) {
+      setName(product.name || "");
+      setPrice(product.price || "");
+      setDescription(product.description || "");
+      setCategory(product.category || "");
+      setStock(product.stock || "");
+      setBrand(product.brand || "");
+
+      // Pull secure URLs from MongoDB array directly into display previews
+      if (product.image && product.image.length > 0) {
+        const existingUrls = product.image.map((img) => img.url);
+        setImagePreviews(existingUrls);
+      }
+    }
+  }, [product, id]);
+
+  // 1. CHOOSE NEW IMAGES: Simply appends them to your current previews list
   const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
+    const selectedFiles = Array.from(e.target.files);
 
-    if (images.length + files.length > 5) {
+    if (imagePreviews.length + selectedFiles.length > 5) {
       toast.error("Maximum upload capacity is 5 images total.");
       return;
     }
 
-    files.forEach((file) => {
+    selectedFiles.forEach((file) => {
       if (file.size > 2 * 1024 * 1024) {
-        toast.error(`"${file.name}" is too large. Maximum size limit is 2MB.`);
+        toast.error(`"${file.name}" is too large. Max limit is 2MB.`);
         return;
       }
 
+      // Add the raw file block to your main images state
       setImages((prev) => [...prev, file]);
 
+      // Add the display string url to your preview state
       const reader = new FileReader();
       reader.onload = () => {
         if (reader.readyState === 2) {
@@ -91,14 +104,36 @@ const CreateProduct = () => {
     });
   };
 
+  // 2. REMOVE AN IMAGE: Simply removes the target item by its unique index number
   const removeImage = (indexToRemove) => {
-    setImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+    // Look at what we are removing from the preview window
+    const targetUrl = imagePreviews[indexToRemove];
+
+    // Remove it from your on-screen visual gallery instantly
     setImagePreviews((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+
+    // If it was a new local file (starts with data:), remove it from your binary uploading array too
+    if (targetUrl && targetUrl.startsWith("data:")) {
+      // Find all new local images that were added in this session
+      const newLocalPreviews = imagePreviews.filter((url) =>
+        url.startsWith("data:"),
+      );
+      const positionInNewImages = newLocalPreviews.indexOf(targetUrl);
+
+      // Drop it cleanly from the binary state
+      if (positionInNewImages !== -1) {
+        setImages((prev) =>
+          prev.filter((_, idx) => idx !== positionInNewImages),
+        );
+      }
+    }
   };
 
+  // 3. SUBMIT CHANGES: Gathers everything and fires it to Redux
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Basic text validation checks
     if (
       !name.trim() ||
       !price ||
@@ -111,14 +146,15 @@ const CreateProduct = () => {
       return;
     }
 
-    if (images.length === 0) {
-      toast.error("Please upload at least one product image.");
+    if (imagePreviews.length === 0) {
+      toast.error("Please keep at least one product image.");
       return;
     }
 
     try {
       const productFormData = new FormData();
 
+      // Load all your textual details into the box
       productFormData.append("name", name);
       productFormData.append("description", description);
       productFormData.append("price", Number(price));
@@ -126,11 +162,24 @@ const CreateProduct = () => {
       productFormData.append("brand", brand);
       productFormData.append("category", category);
 
+      // Send any brand-new image files if they exist
       images.forEach((file) => {
         productFormData.append("images", file);
       });
 
-      dispatch(createProduct(productFormData));
+      // Filter and send any original old images that weren't deleted by the user
+      if (product?.image) {
+        const remainingOldImages = product.image.filter((img) =>
+          imagePreviews.includes(img.url),
+        );
+        productFormData.append(
+          "remainingImages",
+          JSON.stringify(remainingOldImages),
+        );
+      }
+
+      // Ship everything to your Redux state action
+      dispatch(updateProduct({ id, productData: productFormData }));
     } catch (err) {
       toast.error("An error occurred while compiling fields.");
     }
@@ -143,23 +192,14 @@ const CreateProduct = () => {
     }
 
     if (success) {
-      toast.success("Product created successfully!");
+      toast.success("Product updated successfully!");
       dispatch(removeSuccess());
-
-      // Reset form fields cleanly upon verified server action completion
-      setName("");
-      setPrice("");
-      setDescription("");
-      setCategory("");
-      setStock("");
-      setBrand("");
-      setImages([]);
-      setImagePreviews([]);
+      navigate("/admin/products");
     }
   }, [dispatch, error, success]);
 
   return (
-    <div className="min-h-screen bg-neutral-50/50 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-neutral-50/50 px-4 sm:px-6 lg:px-8 py-8">
       <div className="max-w-xl mx-auto bg-white border border-neutral-100 rounded-2xl shadow-sm overflow-hidden">
         {/* Header Ribbon Frame */}
         <div className="px-6 py-5 bg-white border-b border-neutral-100 flex items-center gap-4">
@@ -170,15 +210,14 @@ const CreateProduct = () => {
             <ArrowLeft size={18} />
           </Link>
           <h2 className="text-lg font-bold text-neutral-900">
-            Create New Product
+            Edit/Update Product
           </h2>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
-          {/* Avatar-Styled Multi-Product Image Row */}
+          {/* Multi-Product Image Area */}
           <div className="flex flex-col items-center justify-center space-y-4">
             <div className="flex flex-wrap justify-center gap-3 items-center">
-              {/* Image Previews Map Rendering */}
               {imagePreviews.map((previewSrc, idx) => (
                 <div
                   key={idx}
@@ -199,7 +238,6 @@ const CreateProduct = () => {
                 </div>
               ))}
 
-              {/* Main Avatar Picker Widget (Always available if under 5 images) */}
               {imagePreviews.length < 5 && (
                 <div className="relative">
                   <div className="w-20 h-20 rounded-2xl border-4 border-white shadow-md overflow-hidden bg-neutral-100 flex flex-col items-center justify-center text-neutral-400 p-2 text-center">
@@ -226,9 +264,9 @@ const CreateProduct = () => {
                 </div>
               )}
             </div>
-            <span className="text-xs text-neutral-400 font-medium text-center">
-              Click camera icon to add photos. Hover over thumbnails to delete
-              them.
+            <span className="text-xs text-neutral-400 font-medium text-center leading-normal">
+              Click camera icon to pick new files. Warning: Uploading
+              replacement files overwrites old cloud items entirely.
             </span>
           </div>
 
@@ -245,47 +283,27 @@ const CreateProduct = () => {
               id="name-input"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Inverter Split Unit Air Conditioner"
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm font-medium text-neutral-800 placeholder:text-neutral-400 outline-none focus:border-neutral-400 transition"
+              className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition"
+              placeholder="Product Name"
             />
           </div>
 
-          {/* Form Field: Description Textarea */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="desc-input"
-              className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5"
-            >
-              <FileText size={14} /> Description
-            </label>
-            <textarea
-              id="desc-input"
-              rows={4}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Provide a comprehensive summary detailing your product..."
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm font-medium text-neutral-800 placeholder:text-neutral-400 outline-none focus:border-neutral-400 transition resize-none"
-            />
-          </div>
-
-          {/* Grid Container for Price and Stock fields */}
+          {/* Form Row: Price & Stock */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Form Field: Price Input */}
             <div className="space-y-1.5">
               <label
                 htmlFor="price-input"
                 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5"
               >
-                <DollarSign size={14} /> Price (₦)
+                <DollarSign size={14} /> Price
               </label>
               <input
                 type="number"
                 id="price-input"
-                min="0"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                placeholder="0.00"
-                className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm font-medium text-neutral-800 placeholder:text-neutral-400 outline-none focus:border-neutral-400 transition"
+                className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition"
+                placeholder="e.g. 99.99"
               />
             </div>
 
@@ -309,41 +327,22 @@ const CreateProduct = () => {
             </div>
           </div>
 
-          {/* Form Field: Brand Dropdown Selector */}
+          {/* Form Field: Brand Input */}
           <div className="space-y-1.5">
             <label
-              htmlFor="brand-select"
+              htmlFor="brand-input"
               className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5"
             >
-              <Tag size={14} /> Brand
+              <Tag size={14} /> Brand Name
             </label>
-            <div className="relative">
-              <select
-                id="brand-select"
-                value={brand}
-                onChange={(e) => setBrand(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm font-medium text-neutral-800 bg-white outline-none focus:border-blue-500 appearance-none cursor-pointer"
-              >
-                <option value="" disabled hidden>
-                  Select product brand
-                </option>
-                {brands.map((brandName) => (
-                  <option key={brandName} value={brandName}>
-                    {brandName}
-                  </option>
-                ))}
-              </select>
-              {/* Custom Dropdown Arrow Element */}
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-neutral-400">
-                <svg
-                  className="fill-current h-4 w-4"
-                  xmlns="http://w3.org"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
-            </div>
+            <input
+              type="text"
+              id="brand-input"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+              placeholder="e.g. Skyrun, LG, Panasonic"
+              className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm font-medium text-neutral-800 placeholder:text-neutral-400 outline-none focus:border-neutral-400 transition"
+            />
           </div>
 
           {/* Form Field: Choose Category Dropdown */}
@@ -387,12 +386,12 @@ const CreateProduct = () => {
             >
               {loading ? (
                 <>
-                  <span>Creating Product...</span>
+                  <span>Updating Product...</span>
                 </>
               ) : (
                 <>
                   <Save size={16} />
-                  <span>Create</span>
+                  <span>Update</span>
                 </>
               )}
             </button>
@@ -403,4 +402,4 @@ const CreateProduct = () => {
   );
 };
 
-export default CreateProduct;
+export default UpdateProduct;

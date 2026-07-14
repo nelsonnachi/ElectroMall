@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import API from "../../../api";
 
 // Fetch admin products (with dynamic backend search parameters and pagination metrics)
 export const fetchAdminProducts = createAsyncThunk(
@@ -12,7 +12,7 @@ export const fetchAdminProducts = createAsyncThunk(
       // Pass parameter strings directly into the API route URL string
       const url = `/api/v1/admin/products?keyword=${keyword}&page=${page}`;
       
-      const { data } = await axios.get(url);
+      const { data } = await API.get(url);
       return data;
     } catch (error) {
       return rejectWithValue(
@@ -28,7 +28,7 @@ export const createProduct = createAsyncThunk(
   "admin/createProduct",
   async (productData, { rejectWithValue }) => {
     try {
-      const { data } = await axios.post(
+      const { data } = await API.post(
         "/api/v1/admin/product/create",
         productData,
       );
@@ -47,7 +47,7 @@ export const updateProduct = createAsyncThunk(
   "admin/updateProduct",
   async ({ id, productData }, { rejectWithValue }) => {
     try {
-      const { data } = await axios.put(
+      const { data } = await API.put(
         `/api/v1/admin/product/${id}`,
         productData,
       );
@@ -66,7 +66,7 @@ export const deleteProduct = createAsyncThunk(
   "admin/deleteProduct",
   async (productId, { rejectWithValue }) => {
     try {
-      const { data } = await axios.delete(`/api/v1/admin/product/${productId}`);
+      const { data } = await API.delete(`/api/v1/admin/product/${productId}`);
       return { productId };
     } catch (error) {
       return rejectWithValue(
@@ -85,7 +85,7 @@ export const fetchAllUsers = createAsyncThunk(
       const { page = 1 } = filterData;
 
       // Map parameters seamlessly into a standard URL query template literal
-      const { data } = await axios.get(`/api/v1/admin/users?page=${page}`);
+      const { data } = await API.get(`/api/v1/admin/users?page=${page}`);
       return data;
     } catch (error) {
       return rejectWithValue(
@@ -100,7 +100,7 @@ export const getSingleUser = createAsyncThunk(
   "admin/getSingleUser",
   async (id, { rejectWithValue }) => {
     try {
-      const { data } = await axios.get(`/api/v1/admin/user/${id}`);
+      const { data } = await API.get(`/api/v1/admin/user/${id}`);
       return data;
     } catch (error) {
       return rejectWithValue(
@@ -115,7 +115,7 @@ export const updateUserRole = createAsyncThunk(
   "admin/updateUserRole",
   async ({ userId, role }, { rejectWithValue }) => {
     try {
-      const { data } = await axios.put(`/api/v1/admin/user/${userId}`, {
+      const { data } = await API.put(`/api/v1/admin/user/${userId}`, {
         role,
       });
       return data;
@@ -132,7 +132,7 @@ export const deleteUserProfile = createAsyncThunk(
   "admin/deleteUserProfile",
   async (userId, { rejectWithValue }) => {
     try {
-      const { data } = await axios.delete(`/api/v1/admin/user/${userId}`);
+      const { data } = await API.delete(`/api/v1/admin/user/${userId}`);
       return data;
     } catch (error) {
       return rejectWithValue(
@@ -153,7 +153,7 @@ export const getAllOrders = createAsyncThunk(
       // Map queries cleanly into standard URL API endpoints search strings
       const url = `/api/v1/admin/orders?startDate=${startDate}&endDate=${endDate}&page=${page}`;
       
-      const { data } = await axios.get(url);
+      const { data } = await API.get(url);
       return data;
     } catch (error) {
       return rejectWithValue(
@@ -169,7 +169,7 @@ export const deleteOrder = createAsyncThunk(
   "admin/deleteOrder",
   async (id, { rejectWithValue }) => {
     try {
-      const { data } = await axios.delete(`/api/v1/admin/order/${id}`);
+      const { data } = await API.delete(`/api/v1/admin/order/${id}`);
       return data;
     } catch (error) {
       return rejectWithValue(
@@ -184,7 +184,7 @@ export const updateOrderStatus = createAsyncThunk(
   "admin/updateOrderStatus",
   async ({orderId, status}, { rejectWithValue }) => {
     try {
-      const { data } = await axios.put(`/api/v1/admin/order/${orderId}`, {status});
+      const { data } = await API.put(`/api/v1/admin/order/${orderId}`, {status});
       return data;
     } catch (error) {
       return rejectWithValue(

@@ -1,12 +1,12 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import API from "../../../api";
 
 // Register User API
 export const registerUser = createAsyncThunk(
   "user/registerUser",
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await axios.post("/api/v1/register", userData);
+      const response = await API.post("/api/v1/register", userData);
       return response.data;
     } catch (error) {
       console.error("User registration error:", error);
@@ -22,7 +22,7 @@ export const LoginUser = createAsyncThunk(
   "user/loginUser",
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await axios.post("/api/v1/login", userData, {
+      const response = await API.post("/api/v1/login", userData, {
         withCredentials: true,
       });
       return response.data;
@@ -40,7 +40,7 @@ export const loadUserData = createAsyncThunk(
   "user/loadUserData",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get("/api/v1/profile", {
+      const response = await API.get("/api/v1/profile", {
         withCredentials: true,
       });
       return response.data;
@@ -58,7 +58,7 @@ export const logout = createAsyncThunk(
   "user/logout",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.post("/api/v1/logout", null, {
+      const response = await API.post("/api/v1/logout", null, {
         withCredentials: true,
       });
       return response.data;
@@ -74,7 +74,7 @@ export const updateProfile = createAsyncThunk(
   "user/updateProfile",
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await axios.put("/api/v1/profile/update", userData, {
+      const response = await API.put("/api/v1/profile/update", userData, {
         withCredentials: true,
       });
       return response.data;
@@ -94,7 +94,7 @@ export const updatePassword = createAsyncThunk(
   "user/updatePassword",
   async (passwordData, { rejectWithValue }) => {
     try {
-      const response = await axios.put(
+      const response = await API.put(
         "/api/v1/password/update",
         passwordData,
         {
@@ -118,7 +118,7 @@ export const forgotPassword = createAsyncThunk(
   "user/forgotPassword",
   async (emailData, { rejectWithValue }) => {
     try {
-      const response = await axios.post("/api/v1/password/forgot", emailData, {
+      const response = await API.post("/api/v1/password/forgot", emailData, {
         withCredentials: true,
       });
       return response.data;
@@ -141,7 +141,7 @@ export const resetPassword = createAsyncThunk(
   "user/resetPassword",
   async ({ token, resetPasswordData }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(
+      const response = await API.post(
         `/api/v1/password/reset/${token}`,
         resetPasswordData,
         {

@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import API from "../../../api";
 
 // All products (function for getting all products
 export const getProduct = createAsyncThunk(
@@ -22,7 +22,7 @@ export const getProduct = createAsyncThunk(
       // Automatically formats to: /api/v1/products?keyword=...&page=...&category=...
       const link = `/api/v1/products?${params.toString()}`;
 
-      const response = await axios.get(link);
+      const response = await API.get(link);
       return response.data;
     } catch (error) {
       console.error("Product fetch error:", error);
@@ -39,7 +39,7 @@ export const getProductDetails = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const link = `/api/v1/product/${id}`;
-      const response = await axios.get(link);
+      const response = await API.get(link);
       return response.data;
     } catch (error) {
       console.error("Product fetch error:", error);
@@ -55,7 +55,7 @@ export const createReview = createAsyncThunk(
   "product/createReview",
   async ({rating, comment, productId}, { rejectWithValue }) => {
     try {
-      const {data} = await axios.put(`/api/v1/review`, { rating, comment, productId });
+      const {data} = await API.put(`/api/v1/review`, { rating, comment, productId });
       return data;
     } catch (error) {
       console.error("Product fetch error:", error);

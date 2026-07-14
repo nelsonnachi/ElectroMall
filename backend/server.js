@@ -14,19 +14,37 @@ import cookieParser from "cookie-parser";
 import "./config/cloudinaryConfig.js"; 
 import paymentRoutes from "./routes/paymentRoutes.js";
 
-
-
-// Initialize App
 const app = express();
 const PORT = process.env.PORT || 8001;
 
-// global middle
-app.use(cors());
+// Explicitly list the exact domains allowed to connect to your API
+const allowedOrigins = [
+  "https://vercel.app",  
+  "http://localhost:5173"            
+];
+
+//  Configure safe, secure CORS rules
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Request blocked by CORS security validation"));
+    }
+  },
+  credentials: true, 
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+// global middleware
 app.use(express.json());
 app.use(cookieParser());
 
 // connect to database
-connectDB ();
+connectDB();
 
 // Routing
 app.use("/api/v1", productRouter);

@@ -1,11 +1,11 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import API from "../../../api";
 
 export const verifyPayment = createAsyncThunk(
   "payment/verify",
   async ({ reference, orderId }, { rejectWithValue }) => {
     try {
-      const { data } = await axios.get(
+      const { data } = await API.get(
         `/api/payments/verify/${reference}/${orderId}`,
         {
           withCredentials: true,

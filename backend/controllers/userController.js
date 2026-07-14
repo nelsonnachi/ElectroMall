@@ -46,7 +46,9 @@ export const registerUser = async (req, res) => {
     // storing token inside cookie
     res.cookie("token", token, {
       httpOnly: true,
-      expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
+      expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      secure: true,
+      sameSite: "none",
     });
 
     user.password = undefined;
@@ -85,7 +87,9 @@ export const loginUser = async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
+      expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      secure: true,
+      sameSite: "none",
     });
 
     user.password = undefined;
@@ -103,15 +107,17 @@ export const loginUser = async (req, res) => {
 
 // @desc    User logout
 export const logoutUser = async (req, res) => {
-  res.clearCookie("token", null, {
+  res.clearCookie("token", {
     httpOnly: true,
-    expires: new Date(Date.now()),
+    secure: true,
+    sameSite: "none",
   });
-  res
-    .status(200)
-    .json({ success: true, message: "User logged out successfully" });
-};
 
+  res.status(200).json({
+    success: true,
+    message: "User logged out successfully",
+  });
+};
 
 export const requestPasswordReset = async (req, res) => {
   try {
@@ -397,14 +403,13 @@ export const getUsersList = async (req, res) => {
       users,
     });
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Server error while fetching users list", 
-      error: error.message 
+      message: "Server error while fetching users list",
+      error: error.message,
     });
   }
 };
-
 
 // Admin --- Getting single user information
 export const getSingleUser = async (req, res) => {
@@ -474,10 +479,7 @@ export const deleteUser = async (req, res) => {
       });
     }
 
-    if (
-      user.avatar?.public_id && 
-      user.avatar.public_id !== "default_avatar"
-    ) {
+    if (user.avatar?.public_id && user.avatar.public_id !== "default_avatar") {
       await cloudinary.uploader.destroy(user.avatar.public_id);
     }
 
@@ -497,4 +499,3 @@ export const deleteUser = async (req, res) => {
     });
   }
 };
-

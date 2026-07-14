@@ -1,3 +1,5 @@
+// 📄 Backend: utils/buildQuery.js (or whatever you named your class file)
+
 class buildProductQuery {
   constructor(query, queryStr) {
     this.query = query;
@@ -17,10 +19,32 @@ class buildProductQuery {
     return this;
   }
 
+  // ====================================================S
+  // This method is to handle date filtering for orders
+  dateFilter() {
+    const { startDate, endDate } = this.queryStr;
+    let dateQuery = {};
+
+    if (startDate || endDate) {
+      dateQuery.createdAt = {};
+      if (startDate) {
+        // Start from 12:00:00 AM of that day
+        dateQuery.createdAt.$gte = new Date(new Date(startDate).setHours(0, 0, 0, 0));
+      }
+      if (endDate) {
+        // End at 11:59:59 PM of that day
+        dateQuery.createdAt.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+      }
+      this.query = this.query.find(dateQuery);
+    }
+    return this;
+  }
+
+  // ====================================================F
+
   filter() {
     const queryCopy = { ...this.queryStr };
-    // Remove fields that should not be used as MongoDB filters
-    const removeFields = ["keyword", "page", "limit", "sort"];
+    const removeFields = ["keyword", "page", "limit", "sort", "startDate", "endDate"];
     removeFields.forEach((key) => delete queryCopy[key]);
     this.query = this.query.find(queryCopy);
     return this;
@@ -28,17 +52,16 @@ class buildProductQuery {
 
   sort() {
     if (this.queryStr.sort) {
-      // These keys must match the exact option values you created in AllProducts.jsx
       const sortOptions = {
-        price_asc: { price: 1 }, // Lowest price first
-        price_desc: { price: -1 }, // Highest price first
-        newest: { createdAt: -1 }, // Most recent date first (Assumes timestamps: true on schema)
+        price_asc: { price: 1 }, 
+        price_desc: { price: -1 }, 
+        newest: { createdAt: -1 }, 
       };
 
-      const sortBy = sortOptions[this.queryStr.sort] || { createdAt: -1 }; // Fallback option
+      const sortBy = sortOptions[this.queryStr.sort] || { createdAt: -1 }; 
       this.query = this.query.sort(sortBy);
     } else {
-      this.query = this.query.sort({ createdAt: -1 }); // Default fallback sorting mechanism
+      this.query = this.query.sort({ createdAt: -1 }); 
     }
     return this;
   }

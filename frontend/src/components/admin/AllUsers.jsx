@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
-import { Edit, Trash2, Plus, Users,Loader2  } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Edit, Trash2, Plus, Users, Loader2 } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import {
   deleteUserProfile,
@@ -13,25 +13,32 @@ import {
   removeSuccess,
 } from "../../redux/features/admin/adminSlice";
 import { toast } from "react-toastify";
+import Pagination from "../product/Pagination";
 
 const AllUsers = () => {
-  const { loading, error, users, message, deleting } = useSelector(
-    (state) => state.admin,
-  );
+  const {
+    loading,
+    error,
+    users = [], // 🌟 Fixed: Safeguarded array boundary fallback
+    message,
+    deleting,
+    totalPages = 1,
+  } = useSelector((state) => state.admin);
   const dispatch = useDispatch();
+  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Number(searchParams.get("page")) || 1;
 
   useEffect(() => {
-    dispatch(fetchAllUsers());
-  }, [dispatch]);
+    dispatch(fetchAllUsers({ page }));
+  }, [dispatch, page]);
 
   const handleDelete = (userId) => {
     const isConfirmed = window.confirm(
       "Are you sure you want to delete this user?",
     );
     if (!isConfirmed) return;
-    if (isConfirmed) {
-      dispatch(deleteUserProfile(userId));
-    }
+    dispatch(deleteUserProfile(userId));
   };
 
   useEffect(() => {
@@ -59,8 +66,7 @@ const AllUsers = () => {
             User Management
           </h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Manage, monitor, and update your application user accounts and
-            roles.
+            Manage, monitor, and update your application user accounts and roles.
           </p>
         </div>
         <Link
@@ -131,7 +137,7 @@ const AllUsers = () => {
                     >
                       {/* Serial Number Row */}
                       <td className="px-6 py-4 text-gray-400 font-mono text-xs">
-                        {index + 1}
+                        {((page - 1) * 10) + (index + 1)}
                       </td>
 
                       {/* User Name Descriptive Identifiers */}
@@ -180,6 +186,7 @@ const AllUsers = () => {
                       </td>
 
                       {/* Actions Operations Cell */}
+                      {/* 🌟 Fixed: Fully closed and sealed the elements layout below */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
                         <div className="flex items-center justify-center space-x-2">
                           <Link
@@ -191,8 +198,8 @@ const AllUsers = () => {
                           </Link>
                           <button
                             onClick={() => handleDelete(user._id)}
-                            disabled={isRowDeleting} 
-                            className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed" 
+                            disabled={isRowDeleting}
+                            className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                             title="Delete User"
                           >
                             {isRowDeleting ? (
@@ -209,6 +216,10 @@ const AllUsers = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="border-t border-gray-200 bg-gray-50/50 p-4">
+          <Pagination totalPages={totalPages} />
         </div>
       </div>
     </div>

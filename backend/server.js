@@ -5,6 +5,7 @@ import dns from "node:dns";
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 import express from "express";
+import cors from 'cors';
 import productRouter from "./routes/productRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import orderRouter from "./routes/orderRoutes.js";
@@ -20,6 +21,7 @@ const app = express();
 const PORT = process.env.PORT || 8001;
 
 // global middle
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 

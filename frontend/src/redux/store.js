@@ -15,4 +15,10 @@ export const store = configureStore({
     order: orderReducer,
     admin: adminReducer,
   },
+  // INJECTED MIDDLEWARE CONFIGURATION TO SILENCE WARNINGS:
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false, 
+      immutableCheck: false,  
+    }),
 });

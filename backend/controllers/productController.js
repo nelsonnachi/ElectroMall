@@ -230,18 +230,44 @@ export const getSingleProduct = async (req, res) => {
 
 // -----------------------------
 
-// Admin --- Getting all products
+// Admin --- Getting all products (with pagination, search, and sorting filters)
 export const getAdminProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const limit = 10; // Set display limit per page
+
+    // 1. Instance A: Calculate total matching entries BEFORE applying pagination limits
+    const countBuilder = new buildProductQuery(Product.find(), req.query)
+      .search()
+      .filter();
+    const totalMatchingProducts = await countBuilder.query.countDocuments();
+
+    // 2. Instance B: Fetch chunked page items (Search -> Filters -> Sorts -> Limits -> Skips)
+    const dataBuilder = new buildProductQuery(Product.find(), req.query)
+      .search()
+      .filter()
+      .sort()
+      .pagination(limit);
+
+    const products = await dataBuilder.query;
+
+    // 3. Determine full mathematically available pages layout
+    const totalPages = Math.ceil(totalMatchingProducts / limit) || 1;
+
     res.status(200).json({
       success: true,
+      count: products.length,
+      totalPages, // 👈 Dispatched safely to the client side
       products,
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: "Server error while fetching admin products", 
+      error: error.message 
+    });
   }
 };
+
 
 // ------------Review
 

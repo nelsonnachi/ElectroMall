@@ -1,6 +1,7 @@
 import Order from "../models/orderModel.js";
 import Product from "../models/productModel.js";
 import User from "../models/userModel.js";
+import buildProductQuery from "../utils/buildProductQuery.js";
 
 // Create a new order (user)
 export const createOrder = async (req, res) => {
@@ -15,6 +16,7 @@ export const createOrder = async (req, res) => {
       totalPrice,
     } = req.body;
 
+    // Create the order record
     const order = await Order.create({
       shippingInfo,
       orderItems,
@@ -29,6 +31,15 @@ export const createOrder = async (req, res) => {
       user: req.user._id,
     });
 
+    // Loop through every purchased item and decrease product stock levels
+    for (const item of orderItems) {
+      if (item.product) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: -(item.quantity || 1) }, 
+        });
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: "Order placed successfully",
@@ -42,6 +53,7 @@ export const createOrder = async (req, res) => {
     });
   }
 };
+
 
 // Get single order details (user)
 export const getSingleOrder = async (req, res) => {
@@ -75,7 +87,9 @@ export const getSingleOrder = async (req, res) => {
 export const allMyOrders = async (req, res) => {
   try {
     // Fetches orders for the user and sorts them by newest first
-    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const orders = await Order.find({ user: req.user._id }).sort({
+      createdAt: -1,
+    });
 
     // Handle case where user has no orders yet
     if (!orders || orders.length === 0) {
@@ -101,24 +115,40 @@ export const allMyOrders = async (req, res) => {
   }
 };
 
-
-// Get all orders (admin)
+// Get all orders (admin with date filtering & pagination)
 export const getAllOrders = async (req, res) => {
   try {
-    // Fetch ALL orders from the database
-    // Sorts by newest first (-1) to show recent orders at the top of the list
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const limit = 10; // Set display limit per page
 
-    // Calculate total revenue of the entire store
+    // 1. Instance A: Calculate total matching entries BEFORE applying pagination limits
+    const countQueryBuilder = new buildProductQuery(Order.find(), req.query)
+      .dateFilter()
+      .filter();
+    const totalMatchingOrders = await countQueryBuilder.query.countDocuments();
+
+    // 2. Instance B: Fetch chunked page items (Filters -> Sorts -> Limits -> Skips)
+    const dataQueryBuilder = new buildProductQuery(Order.find(), req.query)
+      .dateFilter()
+      .filter()
+      .sort()
+      .pagination(limit);
+
+    const orders = await dataQueryBuilder.query;
+    
+    // 3. Mathematical parsing logic to safely determine full available pages matrix
+    const totalPages = Math.ceil(totalMatchingOrders / limit) || 1;
+
+    // 4. Calculate dashboard revenue metrics of ONLY the current paginated view selection array
     const totalAmount = orders.reduce(
       (acc, order) => acc + order.totalPrice,
-      0,
+      0
     );
 
     res.status(200).json({
       success: true,
       totalAmount: Number(totalAmount.toFixed(2)),
       count: orders.length,
+      totalPages, // 👈 Dispatched safely to the client side
       orders,
     });
   } catch (error) {
@@ -129,6 +159,8 @@ export const getAllOrders = async (req, res) => {
     });
   }
 };
+
+
 
 // Update order status (Admin)
 export const updateOrderStatus = async (req, res) => {
@@ -146,34 +178,49 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    // Prevent modifications if already delivered
-    if (order.orderStatus === "Delivered") {
+    // Convert statuses to uniform lowercase for safe comparisons
+    const currentStatus = order.orderStatus?.toLowerCase();
+    const newStatus = status?.toLowerCase();
+
+    // Block any edits if the order is already in a terminal state
+    if (currentStatus === "delivered") {
       return res.status(400).json({
         success: false,
-        message: "Order is already delivered",
+        message: "Order has already been delivered and cannot be modified.",
       });
     }
 
-    // Loop and update product inventory directly in the DB
-    for (const item of order.orderItems) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { stock: -item.quantity },
+    if (currentStatus === "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "This order is cancelled. Cancelled orders cannot be re-opened or updated.",
       });
     }
 
-    // Update order status details
+    // Return items to stock ONLY when moving to a cancelled state for the first time
+    if (newStatus === "cancelled"  && currentStatus !== "cancelled") {
+      for (const item of order.orderItems) {
+        if (item.product) {
+          await Product.findByIdAndUpdate(item.product, {
+            $inc: { stock: item.quantity || 1 }, 
+          });
+        }
+      }
+    }
+
+    // Update status details on the document object
     order.orderStatus = status;
 
-    if (status === "Delivered") {
+    if (newStatus === "delivered") {
       order.deliveredAt = Date.now();
     }
 
-    // Save order changes
+    // Save changes to the database
     await order.save();
 
     return res.status(200).json({
       success: true,
-      message: "Order status updated successfully",
+      message: `Order status updated to "${status}" successfully.`,
       order,
     });
   } catch (error) {
@@ -184,6 +231,7 @@ export const updateOrderStatus = async (req, res) => {
     });
   }
 };
+
 
 // Delete order (Admin)
 export const deleteOrder = async (req, res) => {
@@ -198,31 +246,44 @@ export const deleteOrder = async (req, res) => {
       });
     }
 
-    if (order.orderStatus !== "Delivered") {
+    //  Block modifications on already completed sales history
+    if (order.orderStatus?.toLowerCase() === "delivered") {
       return res.status(400).json({
         success: false,
-        message: "This order is under processing!",
+        message: "Cannot cancel an order that has already been delivered to the customer!",
       });
     }
 
-    // Loop through the order items and return them to stock
+    // IDEMPOTENCY CHECK: Block if the order is already cancelled to prevent double-stocking inventory
+    if (order.orderStatus?.toLowerCase() === "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "This order has already been cancelled.",
+      });
+    }
+
+    // INVENTORY RESTORATION: Return the un-shipped items back to the digital shelves safely
     for (const item of order.orderItems) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { stock: item.quantity },
-      });
+      if (item.product) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: item.quantity || 1 },
+        });
+      }
     }
 
-    // Now it is safe to delete the order record
-    await order.deleteOne();
+    // SOFT DELETE INDUSTRY STANDARD: Update the status flag instead of wiping the document
+    order.orderStatus = "Cancelled";
+    await order.save();
 
     return res.status(200).json({
       success: true,
-      message: "Order deleted and stock restored successfully",
+      message: "Order cancelled successfully and warehouse stock restored.",
+      order, 
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "Server error while deleting order",
+      message: "Server error while processing order cancellation",
       error: error.message,
     });
   }

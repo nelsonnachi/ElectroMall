@@ -5,6 +5,7 @@ import nodemailer from "nodemailer";
 import { v2 as cloudinary } from "cloudinary";
 import { generateToken } from "../utils/jwt.js";
 import { sendEmail } from "../utils/sendEmail.js";
+import buildProductQuery from "../utils/buildProductQuery.js";
 
 // @desc    Register a new user
 export const registerUser = async (req, res) => {
@@ -369,17 +370,41 @@ export const updateProfile = async (req, res) => {
 // Admin
 
 // Admin --- Getting Users information
+// Admin --- Getting Users information (with explicit server-side pagination)
 export const getUsersList = async (req, res) => {
   try {
-    const users = await User.find().select("-password");
+    const limit = 10; // 10 items per page
+    const currentPage = Number(req.query.page) || 1;
+    const skip = limit * (currentPage - 1);
+
+    // 1. Get the baseline total user document count
+    const totalUsersCount = await User.countDocuments();
+
+    // 2. Fetch page-specific records (Skip past preceding pages and limit to 10 rows)
+    const users = await User.find()
+      .select("-password")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // 3. Formulate structural total page values dynamically
+    const totalPages = Math.ceil(totalUsersCount / limit) || 1;
+
     res.status(200).json({
       success: true,
+      count: users.length,
+      totalPages, // 👈 Relayed cleanly to Redux
       users,
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: "Server error while fetching users list", 
+      error: error.message 
+    });
   }
 };
+
 
 // Admin --- Getting single user information
 export const getSingleUser = async (req, res) => {

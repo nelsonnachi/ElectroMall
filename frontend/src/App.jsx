@@ -33,6 +33,9 @@ import CreateProduct from "./components/admin/CreateProduct";
 import UpdateProduct from "./components/admin/UpdateProduct";
 import AllUsers from "./components/admin/AllUsers";
 import UpdateRole from "./components/admin/UpdateRole";
+import AllOrders from "./components/admin/AllOrders";
+import UpdateOrder from "./components/admin/UpdateOrder";
+
 
 const App = () => {
   const { isAuthenticated, user } = useSelector((state) => state.user);
@@ -112,6 +115,8 @@ const App = () => {
           <Route path="product/edit/:id" element={<UpdateProduct />} />
           <Route path="users" element={<AllUsers />} />
           <Route path="user/:userId" element={<UpdateRole />} />
+          <Route path="orders" element={<AllOrders />} />
+          <Route path="order/:orderId" element={<UpdateOrder />} />
         </Route> 
 
         {/* Auth credentials */}

@@ -1,17 +1,33 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import React, {useEffect} from "react";
+import { useSelector, useDispatch } from "react-redux";
 import {
   Box,
   Users,
   ShoppingBag,
   Star,
-  DollarSign,
+  Banknote,
   PackageCheck,
   PackageX,
 } from "lucide-react";
+import { fetchAdminProducts, getAllOrders, fetchAllUsers } from "../../redux/features/admin/adminAPI";
 
 const Dashboard = () => {
   const { user } = useSelector((state) => state.user);
+  const {products, orders, totalAmount, users} = useSelector((state)=> state.admin)
+  const dispatch = useDispatch();
+
+  useEffect(()=> {
+    dispatch(fetchAdminProducts())
+    dispatch(getAllOrders())
+    dispatch(fetchAllUsers())
+  }, [dispatch])
+
+  const totalProducts = products.length;
+  const totalOrders = orders.length;
+  const totalUsers = users.length;
+  const outOfStock = products.filter((product)=> product.stock === 0).length;
+  const inStock = products.filter((product)=> product.stock > 0).length;
+
 
   return (
     <div className="space-y-6">
@@ -33,7 +49,7 @@ const Dashboard = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Total Products</p>
-            <p className="text-2xl font-bold text-gray-800 font-mono">1,245</p>
+            <p className="text-2xl font-bold text-gray-800 font-mono">{totalProducts}</p>
           </div>
         </div>
 
@@ -43,7 +59,7 @@ const Dashboard = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Active Users</p>
-            <p className="text-2xl font-bold text-gray-800 font-mono">32,840</p>
+            <p className="text-2xl font-bold text-gray-800 font-mono">{totalUsers}</p>
           </div>
         </div>
 
@@ -52,8 +68,8 @@ const Dashboard = () => {
             <ShoppingBag className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">New Orders</p>
-            <p className="text-2xl font-bold text-gray-800 font-mono">452</p>
+            <p className="text-sm text-gray-500 font-medium">Total Orders</p>
+            <p className="text-2xl font-bold text-gray-800 font-mono">{totalOrders}</p>
           </div>
         </div>
 
@@ -69,11 +85,11 @@ const Dashboard = () => {
 
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-4">
           <div className="p-3 bg-yellow-50 text-yellow-600 rounded-lg">
-            <DollarSign className="w-6 h-6" />
+            <Banknote className="w-6 h-6" />
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Total Income</p>
-            <p className="text-2xl font-bold text-gray-800 font-mono">₦3,000,000</p>
+            <p className="text-2xl font-bold text-gray-800 font-mono">{totalAmount.toLocaleString()}</p>
           </div>
         </div>
 
@@ -83,7 +99,7 @@ const Dashboard = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">In Stock</p>
-            <p className="text-2xl font-bold text-gray-800 font-mono">4</p>
+            <p className="text-2xl font-bold text-gray-800 font-mono">{inStock}</p>
           </div>
         </div>
 
@@ -93,7 +109,7 @@ const Dashboard = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Out of Stock</p>
-            <p className="text-2xl font-bold text-gray-800 font-mono">10</p>
+            <p className="text-2xl font-bold text-gray-800 font-mono">{outOfStock}</p>
           </div>
         </div>
       </div>

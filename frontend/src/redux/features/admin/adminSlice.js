@@ -8,6 +8,9 @@ import {
   getSingleUser,
   updateUserRole,
   deleteUserProfile,
+  getAllOrders,
+  deleteOrder,
+  updateOrderStatus,
 } from "./adminAPI";
 
 const adminSlice = createSlice({
@@ -23,6 +26,8 @@ const adminSlice = createSlice({
     user: {},
     message: null,
     orders: [],
+    totalAmount: 0,
+     totalPages: 1,
   },
   reducers: {
     removeErrors: (state) => {
@@ -33,7 +38,7 @@ const adminSlice = createSlice({
     },
     clearMessage: (state) => {
       state.message = null;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -44,6 +49,7 @@ const adminSlice = createSlice({
       .addCase(fetchAdminProducts.fulfilled, (state, action) => {
         state.loading = false;
         state.products = action.payload.products;
+        state.totalPages = action.payload.totalPages;
       })
       .addCase(fetchAdminProducts.rejected, (state, action) => {
         state.loading = false;
@@ -110,12 +116,12 @@ const adminSlice = createSlice({
       })
       .addCase(fetchAllUsers.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = action.payload.users
+        state.users = action.payload.users;
+        state.totalPages = action.payload.totalPages;
       })
       .addCase(fetchAllUsers.rejected, (state, action) => {
-        state.loading = false
-        state.error =
-          action.payload || "Failed to fetch all users";
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch all users";
       })
 
       //Get single user
@@ -125,12 +131,11 @@ const adminSlice = createSlice({
       })
       .addCase(getSingleUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user
+        state.user = action.payload.user;
       })
       .addCase(getSingleUser.rejected, (state, action) => {
-        state.loading = false
-        state.error =
-          action.payload || "Failed to fetch single user";
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch single user";
       })
 
       //Update user role
@@ -140,24 +145,24 @@ const adminSlice = createSlice({
       })
       .addCase(updateUserRole.fulfilled, (state, action) => {
         state.loading = false;
-        state.success = action.payload.success
+        state.success = action.payload.success;
       })
       .addCase(updateUserRole.rejected, (state, action) => {
-        state.loading = false
-        state.error =
-          action.payload || "Failed to update user role";
+        state.loading = false;
+        state.error = action.payload || "Failed to update user role";
       })
 
       //Delete user profile
       .addCase(deleteUserProfile.pending, (state, action) => {
         const userId = action.meta.arg;
-        state.deleting[userId] = true; 
+        state.deleting[userId] = true;
         state.error = null;
       })
       .addCase(deleteUserProfile.fulfilled, (state, action) => {
         const userId = action.meta.arg;
-        state.deleting[userId] = false; 
-        state.message = action.payload.message || "User profile deleted successfully";
+        state.deleting[userId] = false;
+        state.message =
+          action.payload.message || "User profile deleted successfully";
         state.users = state.users.filter((user) => user._id !== userId);
       })
       .addCase(deleteUserProfile.rejected, (state, action) => {
@@ -166,7 +171,67 @@ const adminSlice = createSlice({
           state.deleting[userId] = false;
         }
         state.error = action.payload || "Failed to delete user profile";
-      });
+      })
+
+      // Get all orders
+      .addCase(getAllOrders.pending, (state, action) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getAllOrders.fulfilled, (state, action) => {
+        state.loading = false;
+        state.orders = action.payload.orders;
+        state.totalAmount = action.payload.totalAmount;
+        state.totalPages = action.payload.totalPages;
+      })
+      .addCase(getAllOrders.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to get all user orders";
+      })
+
+      // Delete Orders 
+      .addCase(deleteOrder.pending, (state, action) => {
+        const orderId = action.meta.arg;
+        state.deleting[orderId] = true;
+        state.error = null;
+      })
+      .addCase(deleteOrder.fulfilled, (state, action) => {
+        const orderId = action.meta.arg;
+        state.deleting[orderId] = false;
+        state.success = action.payload.success;
+        state.message =
+          action.payload.message || "Order cancelled successfully";
+
+        // 🚀 UPDATE STEPS: Find the order in memory and change its status to Cancelled
+        const targetOrder = state.orders.find((order) => order._id === orderId);
+        if (targetOrder) {
+          targetOrder.orderStatus = "Cancelled";
+        }
+      })
+
+      .addCase(deleteOrder.rejected, (state, action) => {
+        const orderId = action.meta.arg;
+        if (orderId) {
+          state.deleting[orderId] = false;
+        }
+        state.error = action.payload || "Failed to delete user order";
+      })
+
+      // Update order status
+      .addCase(updateOrderStatus.pending, (state, action) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateOrderStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = action.payload.success;
+        state.order = action.payload.order;
+      })
+      .addCase(updateOrderStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to update order";
+      })
+
   },
 });
 

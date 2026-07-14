@@ -17,23 +17,10 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 const app = express();
 const PORT = process.env.PORT || 8001;
 
-// Explicitly list the exact domains allowed to connect to your API
-const allowedOrigins = [
-  "https://vercel.app",  
-  "http://localhost:5173"            
-];
+const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
-//  Configure safe, secure CORS rules
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error("Request blocked by CORS security validation"));
-    }
-  },
+  origin: frontendUrl, 
   credentials: true, 
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]

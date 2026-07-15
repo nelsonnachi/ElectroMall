@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://electromall.onrender.com",
+        target: "https://electromall.onrender.com" || "http://localhost:8000",
         changeOrigin: true,
       },
     },

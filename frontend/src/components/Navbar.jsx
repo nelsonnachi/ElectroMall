@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import animg from "../assets/an.png";
 import UserDashOptions from "./User/UserDashOptions";
 import {
-  getAvatarStyle, 
+  getAvatarStyle,
   getUserInitial,
   hasCustomAvatar,
 } from "../utils/avatar";
@@ -27,7 +27,7 @@ const Navbar = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const navigate = useNavigate();
-  const {cartItems} = useSelector((state)=> state.cart)
+  const { cartItems } = useSelector((state) => state.cart);
   const { isAuthenticated, user } = useSelector((state) => state.user);
 
   useEffect(() => {
@@ -51,45 +51,12 @@ const Navbar = () => {
     <>
       {/* Announcement Bar */}
       <div
-        className={`w-full bg-amber-50 text-neutral-900 border-b border-amber-100 overflow-hidden transition-all duration-300 ${
-          hideAnnouncement ? "max-h-0 opacity-0" : "max-h-60 opacity-100"
+        className={`w-full bg-neutral-900 text-white text-center transition-all duration-300 ${
+          hideAnnouncement ? "max-h-0 opacity-0" : "max-h-12 opacity-100"
         }`}
       >
-        <div className="container mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <img
-              src={animg}
-              alt="Promo"
-              className="w-12 h-12 rounded-full object-cover border-2 border-white"
-            />
-            <p className="text-base font-medium text-neutral-800">
-              Never miss out on our promotion or discount again.{" "}
-              <span className="text-amber-700 font-bold">Stay connected!</span>
-            </p>
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setEmail("");
-            }}
-            className="relative flex items-center border-b-2 border-neutral-800 pb-1.5 w-full max-w-sm"
-          >
-            <input
-              type="email"
-              placeholder="Enter your email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="bg-transparent text-sm font-medium outline-none w-full pr-8"
-            />
-            <button
-              type="submit"
-              className="absolute right-0 text-neutral-800 hover:text-amber-700"
-            >
-              <ArrowRight size={18} />
-            </button>
-          </form>
+        <div className="container mx-auto px-6 py-2 flex items-center justify-center text-[11px] sm:text-xs font-medium tracking-wider uppercase">
+          <span>🔒 100% Secure Checkout & Easy 7-Day Returns</span>
         </div>
       </div>
 

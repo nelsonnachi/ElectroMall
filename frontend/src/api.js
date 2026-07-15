@@ -3,7 +3,7 @@ import axios from "axios";
 const API = axios.create({
   baseURL: import.meta.env.PROD 
     ? "https://electromall.onrender.com" 
-    : "/api", 
+    : "", 
   withCredentials: true,
 });
 

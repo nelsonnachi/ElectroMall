@@ -43,7 +43,6 @@ export const registerUser = async (req, res) => {
     // Creating token
     const token = generateToken(user);
 
-    // storing token inside cookie
     res.cookie("token", token, {
       httpOnly: true,
       expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
